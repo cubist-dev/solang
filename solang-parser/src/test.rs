@@ -10,6 +10,24 @@ use std::{fs, path::Path, thread};
 use walkdir::WalkDir;
 
 #[test]
+fn print_test() {
+    let src = r#"
+      contract foo {
+        function bar() {
+        }
+      }"#;
+    let mut comments = Vec::new();
+    let lex = Lexer::new(src, 0, &mut comments);
+    let pt = solidity::SourceUnitParser::new()
+        .parse(src, 0, lex)
+        .unwrap();
+    let mut w = Vec::new();
+    pt.to_doc().render(10, &mut w).unwrap();
+    println!("{}", String::from_utf8(w).unwrap());
+
+}
+
+#[test]
 fn parse_test() {
     let src = r#"/// @title Foo
                 /// @description Foo

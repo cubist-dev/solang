@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
+use pretty::{Doc, RcDoc};
 use std::fmt::{self, Display};
 
 #[derive(Debug, PartialEq, PartialOrd, Ord, Eq, Hash, Clone, Copy)]
@@ -93,6 +94,12 @@ pub struct Identifier {
     pub name: String,
 }
 
+impl Identifier {
+    pub fn to_doc(&self) -> RcDoc<()> {
+        RcDoc::text(self.name.clone())
+    }
+}
+
 impl Display for Identifier {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&self.name)
@@ -131,6 +138,15 @@ pub enum Comment {
 #[derive(Debug, PartialEq, Clone)]
 pub struct SourceUnit(pub Vec<SourceUnitPart>);
 
+impl SourceUnit {
+    pub fn to_doc(&self) -> RcDoc<()> {
+        RcDoc::nil().append(RcDoc::intersperse(
+            self.0.iter().map(|x| x.to_doc()),
+            Doc::hardline(),
+        ))
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum SourceUnitPart {
     ContractDefinition(Box<ContractDefinition>),
@@ -148,6 +164,13 @@ pub enum SourceUnitPart {
 }
 
 impl SourceUnitPart {
+    pub fn to_doc(&self) -> RcDoc<()> {
+        match self {
+            SourceUnitPart::ContractDefinition(cd) => cd.to_doc(),
+            _ => panic!(),
+        }
+    }
+
     pub fn loc(&self) -> &Loc {
         match self {
             SourceUnitPart::ContractDefinition(def) => &def.loc,
@@ -325,6 +348,14 @@ pub struct ContractDefinition {
     pub name: Identifier,
     pub base: Vec<Base>,
     pub parts: Vec<ContractPart>,
+}
+
+impl ContractDefinition {
+    pub fn to_doc(&self) -> RcDoc<()> {
+        RcDoc::text("function")
+            .append(Doc::space())
+            .append(self.name.to_doc())
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
