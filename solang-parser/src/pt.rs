@@ -208,6 +208,13 @@ impl Import {
 
 pub type ParameterList = Vec<(Loc, Option<Parameter>)>;
 
+pub fn param_list_to_doc(ps: &ParameterList) -> RcDoc<()> {
+    RcDoc::intersperse(
+	ps.iter().map(|x| x.1.as_ref().unwrap().to_doc()),
+	RcDoc::text(",").append(Doc::space())
+    )
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Type {
     Address,
@@ -371,6 +378,7 @@ impl ContractDefinition {
 	    ).nest(4).group()
 	    ).append(Doc::hardline())
 	    .append(RcDoc::text("}"))
+	    .append(RcDoc::hardline())
     }
 }
 
@@ -633,6 +641,12 @@ pub struct Parameter {
     pub name: Option<Identifier>,
 }
 
+impl Parameter {
+    pub fn to_doc(&self) -> RcDoc<()> {
+	panic!()
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Mutability {
     Pure(Loc),
@@ -741,6 +755,14 @@ impl FunctionDefinition {
 	RcDoc::text("function")
 	    .append(Doc::space())
 	    .append(self.name.as_ref().unwrap().to_doc())
+	    .append(Doc::space())
+	    .append(RcDoc::text("("))
+	    .append(param_list_to_doc(&self.params))
+	    .append(RcDoc::text(")"))
+	    .append(RcDoc::space())
+	    .append(RcDoc::text("{"))
+	    .append(self.body.as_ref().unwrap().to_doc())
+	    .append(RcDoc::text("}"))
     }
 }
 
@@ -783,6 +805,19 @@ pub enum Statement {
         Option<(ParameterList, Box<Statement>)>,
         Vec<CatchClause>,
     ),
+}
+
+impl Statement {
+    pub fn to_doc(&self) -> RcDoc<()> {
+	match self {
+	    Statement::Block { statements, .. } => 
+		RcDoc::intersperse(
+		    statements.iter().map(|x| x.to_doc()),
+		    Doc::hardline()
+		),
+	    _ => panic!()
+	}
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
