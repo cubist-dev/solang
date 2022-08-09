@@ -14,6 +14,7 @@ fn print_test() {
     let src = r#"
       contract foo {
         function bar() {
+          uint256 x = 4;
         }
       }"#;
     let mut comments = Vec::new();
@@ -22,9 +23,9 @@ fn print_test() {
         .parse(src, 0, lex)
         .unwrap();
     let mut w = Vec::new();
+    println!("{:#?}", pt);
     pt.to_doc().render(80, &mut w).unwrap();
     print!("{}", String::from_utf8(w).unwrap());
-
 }
 
 #[test]

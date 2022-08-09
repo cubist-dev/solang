@@ -210,8 +210,8 @@ pub type ParameterList = Vec<(Loc, Option<Parameter>)>;
 
 pub fn param_list_to_doc(ps: &ParameterList) -> RcDoc<()> {
     RcDoc::intersperse(
-	ps.iter().map(|x| x.1.as_ref().unwrap().to_doc()),
-	RcDoc::text(",").append(Doc::space())
+        ps.iter().map(|x| x.1.as_ref().unwrap().to_doc()),
+        RcDoc::text(",").append(Doc::space()),
     )
 }
 
@@ -293,12 +293,12 @@ pub enum ContractPart {
 
 impl ContractPart {
     pub fn to_doc(&self) -> RcDoc<()> {
-	match self {
-	    ContractPart::FunctionDefinition(fd) => fd.to_doc(),
-	    _ => panic!()
-	}
+        match self {
+            ContractPart::FunctionDefinition(fd) => fd.to_doc(),
+            _ => panic!(),
+        }
     }
-    
+
     // Return the location of the part. Note that this excluded the body of the function
     pub fn loc(&self) -> &Loc {
         match self {
@@ -369,16 +369,17 @@ impl ContractDefinition {
         RcDoc::text("contract")
             .append(Doc::space())
             .append(self.name.to_doc())
-	    .append(Doc::space())
-	    .append(RcDoc::text("{"))
-	    .append(Doc::hardline())
-	    .append(RcDoc::intersperse(
-		self.parts.iter().map(|x| x.to_doc()),
-		Doc::hardline()
-	    ).nest(4).group()
-	    ).append(Doc::hardline())
-	    .append(RcDoc::text("}"))
-	    .append(RcDoc::hardline())
+            .append(Doc::space())
+            .append(RcDoc::text("{"))
+            .append(Doc::hardline())
+            .append(
+                RcDoc::intersperse(self.parts.iter().map(|x| x.to_doc()), Doc::hardline())
+                    .nest(4)
+                    .group(),
+            )
+            .append(Doc::hardline())
+            .append(RcDoc::text("}"))
+            .append(RcDoc::hardline())
     }
 }
 
@@ -545,6 +546,20 @@ pub enum Expression {
     This(Loc),
 }
 
+impl Expression {
+    pub fn to_doc(&self) -> RcDoc<()> {
+        match self {
+            Expression::Assign(_, lhs, rhs) => lhs
+                .to_doc()
+                .append(Doc::space())
+                .append(RcDoc::text("="))
+                .append(Doc::space())
+                .append(rhs.to_doc()),
+            _ => panic!(),
+        }
+    }
+}
+
 impl CodeLocation for Expression {
     fn loc(&self) -> Loc {
         match self {
@@ -643,7 +658,7 @@ pub struct Parameter {
 
 impl Parameter {
     pub fn to_doc(&self) -> RcDoc<()> {
-	panic!()
+        panic!()
     }
 }
 
@@ -752,17 +767,17 @@ pub struct FunctionDefinition {
 
 impl FunctionDefinition {
     pub fn to_doc(&self) -> RcDoc<()> {
-	RcDoc::text("function")
-	    .append(Doc::space())
-	    .append(self.name.as_ref().unwrap().to_doc())
-	    .append(Doc::space())
-	    .append(RcDoc::text("("))
-	    .append(param_list_to_doc(&self.params))
-	    .append(RcDoc::text(")"))
-	    .append(RcDoc::space())
-	    .append(RcDoc::text("{"))
-	    .append(self.body.as_ref().unwrap().to_doc())
-	    .append(RcDoc::text("}"))
+        RcDoc::text("function")
+            .append(Doc::space())
+            .append(self.name.as_ref().unwrap().to_doc())
+            .append(Doc::space())
+            .append(RcDoc::text("("))
+            .append(param_list_to_doc(&self.params))
+            .append(RcDoc::text(")"))
+            .append(RcDoc::space())
+            .append(RcDoc::text("{"))
+            .append(self.body.as_ref().unwrap().to_doc())
+            .append(RcDoc::text("}"))
     }
 }
 
@@ -809,14 +824,16 @@ pub enum Statement {
 
 impl Statement {
     pub fn to_doc(&self) -> RcDoc<()> {
-	match self {
-	    Statement::Block { statements, .. } => 
-		RcDoc::intersperse(
-		    statements.iter().map(|x| x.to_doc()),
-		    Doc::hardline()
-		),
-	    _ => panic!()
-	}
+        match self {
+            Statement::Block { statements, .. } => {
+                RcDoc::intersperse(statements.iter().map(|x| x.to_doc()), Doc::hardline())
+                    .nest(4)
+                    .group()
+            }
+            Statement::Expression(_, expr) => expr.to_doc(),
+            Statement::VariableDefinition(_, decl, mexpr) => panic!(),
+            _ => panic!(),
+        }
     }
 }
 
