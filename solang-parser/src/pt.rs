@@ -285,6 +285,13 @@ pub enum ContractPart {
 }
 
 impl ContractPart {
+    pub fn to_doc(&self) -> RcDoc<()> {
+	match self {
+	    ContractPart::FunctionDefinition(fd) => fd.to_doc(),
+	    _ => panic!()
+	}
+    }
+    
     // Return the location of the part. Note that this excluded the body of the function
     pub fn loc(&self) -> &Loc {
         match self {
@@ -352,9 +359,18 @@ pub struct ContractDefinition {
 
 impl ContractDefinition {
     pub fn to_doc(&self) -> RcDoc<()> {
-        RcDoc::text("function")
+        RcDoc::text("contract")
             .append(Doc::space())
             .append(self.name.to_doc())
+	    .append(Doc::space())
+	    .append(RcDoc::text("{"))
+	    .append(Doc::hardline())
+	    .append(RcDoc::intersperse(
+		self.parts.iter().map(|x| x.to_doc()),
+		Doc::hardline()
+	    ).nest(4).group()
+	    ).append(Doc::hardline())
+	    .append(RcDoc::text("}"))
     }
 }
 
@@ -718,6 +734,14 @@ pub struct FunctionDefinition {
     pub return_not_returns: Option<Loc>,
     pub returns: ParameterList,
     pub body: Option<Statement>,
+}
+
+impl FunctionDefinition {
+    pub fn to_doc(&self) -> RcDoc<()> {
+	RcDoc::text("function")
+	    .append(Doc::space())
+	    .append(self.name.as_ref().unwrap().to_doc())
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
