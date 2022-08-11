@@ -367,35 +367,18 @@ pub struct ContractDefinition {
 impl ContractDefinition {
     pub fn to_doc(&self) -> RcDoc<()> {
         RcDoc::text("contract")
-	    .append(RcDoc::space())
-	    .append(self.name.to_doc())
-	    .append(RcDoc::space())
-	    .append(RcDoc::text("{"))
-            .append(
-		RcDoc::intersperse(self.parts.iter().map(
-		    |x| RcDoc::hardline().append(x.to_doc()).nest(4)
-		), Doc::hardline())
-//                RcDoc::hardline().append(self.name.to_doc()).nest(4)
-                    // self.name.to_doc()
-                    // .append(RcDoc::line())
-                    // .append(RcDoc::text("test"))
-                    //.nest(2)
-            )
+            .append(RcDoc::space())
+            .append(self.name.to_doc())
+            .append(RcDoc::space())
+            .append(RcDoc::text("{"))
+            .append(RcDoc::intersperse(
+                self.parts
+                    .iter()
+                    .map(|x| RcDoc::hardline().append(x.to_doc()).nest(4)),
+                Doc::hardline(),
+            ))
             .append(RcDoc::line())
             .append(RcDoc::text("}"))
-            // .append(Doc::space())
-            // .append(self.name.to_doc())
-            // .append(Doc::space())
-            // .append(RcDoc::text("{"))
-            // .append(Doc::hardline())
-            // .append(
-            //     RcDoc::intersperse(self.parts.iter().map(|x| x.to_doc()), Doc::hardline())
-            //         .nest(4)
-            //         .group(),
-            // )
-            // .append(Doc::hardline())
-            // .append(RcDoc::text("}"))
-            // .append(RcDoc::hardline())
     }
 }
 
@@ -571,6 +554,7 @@ impl Expression {
                 .append(RcDoc::text("="))
                 .append(Doc::space())
                 .append(rhs.to_doc()),
+            Expression::Variable(id) => id.to_doc(),
             _ => panic!(),
         }
     }
@@ -791,9 +775,7 @@ impl FunctionDefinition {
             .append(param_list_to_doc(&self.params))
             .append(RcDoc::text(")"))
             .append(RcDoc::space())
-            .append(RcDoc::text("{"))
             .append(self.body.as_ref().unwrap().to_doc())
-            .append(RcDoc::text("}"))
     }
 }
 
@@ -841,11 +823,18 @@ pub enum Statement {
 impl Statement {
     pub fn to_doc(&self) -> RcDoc<()> {
         match self {
-            Statement::Block { statements, .. } => {
-                RcDoc::intersperse(statements.iter().map(|x| x.to_doc()), Doc::hardline())
-                    .nest(4)
-                    .group()
-            }
+            Statement::Block { statements, .. } => RcDoc::text("{")
+                .append(RcDoc::intersperse(
+                    statements.iter().map(|x| {
+                        RcDoc::hardline()
+                            .append(x.to_doc())
+                            .append(RcDoc::text(";"))
+                            .nest(4)
+                    }),
+                    Doc::hardline(),
+                ))
+                .append(RcDoc::hardline())
+                .append("}"),
             Statement::Expression(_, expr) => expr.to_doc(),
             Statement::VariableDefinition(_, decl, mexpr) => panic!(),
             _ => panic!(),
