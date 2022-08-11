@@ -915,7 +915,7 @@ impl Statement {
                     statements
                         .iter()
                         .map(|x| RcDoc::hardline().append(x.to_doc()).nest(4)),
-                    Doc::hardline(),
+                    Doc::nil(),
                 ))
                 .append(RcDoc::hardline())
                 .append("}"),
