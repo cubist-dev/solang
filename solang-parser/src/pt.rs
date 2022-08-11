@@ -270,6 +270,16 @@ pub struct VariableDeclaration {
     pub name: Identifier,
 }
 
+impl VariableDeclaration {
+    pub fn to_doc(&self) -> RcDoc<()> {
+        assert!(self.storage.is_none());
+        self.ty
+            .to_doc()
+            .append(RcDoc::space())
+            .append(self.name.to_doc())
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 #[allow(clippy::vec_box)]
 pub struct StructDefinition {
@@ -848,8 +858,8 @@ impl Statement {
                 .append(RcDoc::text(")"))
                 .append(RcDoc::space())
                 .append(body.to_doc()),
-            Statement::Expression(_, expr) => expr.to_doc().append(";"),
-            Statement::VariableDefinition(_, decl, mexpr) => panic!(),
+            Statement::Expression(_, expr) => expr.to_doc().append(RcDoc::text(";")),
+            Statement::VariableDefinition(_, decl, None) => decl.to_doc().append(RcDoc::text(";")),
             Statement::Continue(..) => RcDoc::text("continue;"),
             Statement::Break(..) => RcDoc::text("break;"),
             Statement::Return(_, Some(expr)) => RcDoc::text("return")
