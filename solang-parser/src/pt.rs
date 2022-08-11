@@ -367,19 +367,35 @@ pub struct ContractDefinition {
 impl ContractDefinition {
     pub fn to_doc(&self) -> RcDoc<()> {
         RcDoc::text("contract")
-            .append(Doc::space())
-            .append(self.name.to_doc())
-            .append(Doc::space())
-            .append(RcDoc::text("{"))
-            .append(Doc::hardline())
+	    .append(RcDoc::space())
+	    .append(self.name.to_doc())
+	    .append(RcDoc::space())
+	    .append(RcDoc::text("{"))
             .append(
-                RcDoc::intersperse(self.parts.iter().map(|x| x.to_doc()), Doc::hardline())
-                    .nest(4)
-                    .group(),
+		RcDoc::intersperse(self.parts.iter().map(
+		    |x| RcDoc::hardline().append(x.to_doc()).nest(4)
+		), Doc::hardline())
+//                RcDoc::hardline().append(self.name.to_doc()).nest(4)
+                    // self.name.to_doc()
+                    // .append(RcDoc::line())
+                    // .append(RcDoc::text("test"))
+                    //.nest(2)
             )
-            .append(Doc::hardline())
+            .append(RcDoc::line())
             .append(RcDoc::text("}"))
-            .append(RcDoc::hardline())
+            // .append(Doc::space())
+            // .append(self.name.to_doc())
+            // .append(Doc::space())
+            // .append(RcDoc::text("{"))
+            // .append(Doc::hardline())
+            // .append(
+            //     RcDoc::intersperse(self.parts.iter().map(|x| x.to_doc()), Doc::hardline())
+            //         .nest(4)
+            //         .group(),
+            // )
+            // .append(Doc::hardline())
+            // .append(RcDoc::text("}"))
+            // .append(RcDoc::hardline())
     }
 }
 

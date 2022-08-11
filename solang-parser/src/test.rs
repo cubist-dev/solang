@@ -14,7 +14,9 @@ fn print_test() {
     let src = r#"
       contract foo {
         function bar() {
-          uint256 x = 4;
+        }
+
+        function baz() {
         }
       }"#;
     let mut comments = Vec::new();
@@ -22,10 +24,11 @@ fn print_test() {
     let pt = solidity::SourceUnitParser::new()
         .parse(src, 0, lex)
         .unwrap();
-    let mut w = Vec::new();
-    println!("{:#?}", pt);
-    pt.to_doc().render(80, &mut w).unwrap();
-    print!("{}", String::from_utf8(w).unwrap());
+    let mut s = String::new();
+    let doc = pt.to_doc();
+    doc.render_fmt(70, &mut s).unwrap();
+    println!("{:#?}", doc);
+    println!("{}", s);
 }
 
 #[test]

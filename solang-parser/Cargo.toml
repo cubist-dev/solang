@@ -18,6 +18,7 @@ lalrpop-util = "0.19"
 phf = { version = "0.10", features = ["macros"] }
 unicode-xid = "0.2.0"
 itertools = "0.10"
+pretty = "0.11.3"
 
 [dev-dependencies]
 walkdir = "2.3.2"
