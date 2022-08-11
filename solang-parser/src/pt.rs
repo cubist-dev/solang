@@ -825,18 +825,42 @@ impl Statement {
         match self {
             Statement::Block { statements, .. } => RcDoc::text("{")
                 .append(RcDoc::intersperse(
-                    statements.iter().map(|x| {
-                        RcDoc::hardline()
-                            .append(x.to_doc())
-                            .append(RcDoc::text(";"))
-                            .nest(4)
-                    }),
+                    statements
+                        .iter()
+                        .map(|x| RcDoc::hardline().append(x.to_doc()).nest(4)),
                     Doc::hardline(),
                 ))
                 .append(RcDoc::hardline())
                 .append("}"),
-            Statement::Expression(_, expr) => expr.to_doc(),
+            Statement::Assembly { .. } => panic!("Assembly printing not supported"),
+            Statement::Args(..) => panic!("Args printing not supported"),
+            Statement::If(_, cond, tb, fb) => RcDoc::text("if")
+                .append(RcDoc::space())
+                .append(RcDoc::text("("))
+                .append(cond.to_doc())
+                .append(RcDoc::text(")"))
+                .append(RcDoc::space())
+                .append(tb.to_doc()),
+            Statement::While(_, cond, body) => RcDoc::text("while")
+                .append(RcDoc::space())
+                .append(RcDoc::text("("))
+                .append(cond.to_doc())
+                .append(RcDoc::text(")"))
+                .append(RcDoc::space())
+                .append(body.to_doc()),
+            Statement::Expression(_, expr) => expr.to_doc().append(";"),
             Statement::VariableDefinition(_, decl, mexpr) => panic!(),
+            Statement::Continue(..) => RcDoc::text("continue;"),
+            Statement::Break(..) => RcDoc::text("break;"),
+            Statement::Return(_, Some(expr)) => RcDoc::text("return")
+                .append(RcDoc::space())
+                .append(expr.to_doc())
+                .append(RcDoc::text(";")),
+            Statement::Return(_, None) => RcDoc::text("return;"),
+            Statement::Revert(..) => panic!("Revert printing not supported"),
+            Statement::RevertNamedArgs(..) => panic!("Revert named args printing not supported"),
+            Statement::Emit(..) => panic!("Emit printing not supported"),
+            Statement::Try(..) => panic!("Try printing not supported"),
             _ => panic!(),
         }
     }

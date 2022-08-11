@@ -15,9 +15,16 @@ fn print_test() {
       contract foo {
         function bar() {
           x;
+          while (x) {
+            continue;
+            break;
+          }
+          return y;
         }
 
         function baz() {
+          if (y) x;
+          return;
         }
       }"#;
     let mut comments = Vec::new();
