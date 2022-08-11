@@ -14,16 +14,19 @@ fn print_test() {
     let src = r#"
       contract foo {
         function bar() {
-          x;
+          uint256 x;
           while (x) {
             continue;
             break;
           }
-          return y;
+          return y + 5;
         }
 
         function baz() {
-          if (y) x;
+          if (!y) x;
+          x = 6 + 8 * 9 % 4 / 6;
+          x++;
+          y = (x + bar.foo) * y;
           return;
         }
       }"#;
@@ -32,6 +35,7 @@ fn print_test() {
     let pt = solidity::SourceUnitParser::new()
         .parse(src, 0, lex)
         .unwrap();
+    //    println!("{:#?}", pt);
     let mut s = String::new();
     let doc = pt.to_doc();
     doc.render_fmt(70, &mut s).unwrap();

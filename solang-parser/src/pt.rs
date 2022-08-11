@@ -235,6 +235,21 @@ pub enum Type {
     },
 }
 
+impl Type {
+    pub fn to_doc(&self) -> RcDoc<()> {
+        match self {
+            Type::Address => panic!("Address not supported"),
+            Type::AddressPayable => panic!("Address payable not supported"),
+            Type::Payable => panic!("Paypable not supported"),
+            Type::Bool => RcDoc::text("bool"),
+            Type::String => RcDoc::text("string"),
+            Type::Int(amts) => RcDoc::text("int"),
+            Type::Uint(size) => RcDoc::text("uint").append(size.to_string()),
+            _ => panic!(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum StorageLocation {
     Memory(Loc),
@@ -558,15 +573,52 @@ pub enum Expression {
 impl Expression {
     pub fn to_doc(&self) -> RcDoc<()> {
         match self {
-            Expression::Assign(_, lhs, rhs) => lhs
-                .to_doc()
-                .append(Doc::space())
-                .append(RcDoc::text("="))
-                .append(Doc::space())
-                .append(rhs.to_doc()),
+            Expression::PostIncrement(_, expr) => expr.to_doc().append(RcDoc::text("++")),
+            Expression::PostIncrement(_, expr) => expr.to_doc().append(RcDoc::text("--")),
+            Expression::New(_, expr) => RcDoc::text("new").append(expr.to_doc()),
+            Expression::ArraySubscript(..) => panic!("Array subscript not supported"),
+            Expression::ArraySlice(..) => panic!("Array slice not supported"),
+            Expression::Parenthesis(_, expr) => RcDoc::text("(")
+                .append(expr.to_doc())
+                .append(RcDoc::text(")")),
+            Expression::MemberAccess(_, contract, field) => {
+                contract.to_doc().append(".").append(field.to_doc())
+            }
+            Expression::Not(_, expr) => RcDoc::text("!").append(expr.to_doc()),
+            Expression::Assign(_, lhs, rhs) => lhs.bin_op_doc("=", rhs),
+            Expression::AssignAdd(_, lhs, rhs) => lhs.bin_op_doc("+=", rhs),
+            Expression::AssignSubtract(_, lhs, rhs) => lhs.bin_op_doc("-=", rhs),
+            Expression::AssignMultiply(_, lhs, rhs) => lhs.bin_op_doc("*=", rhs),
+            Expression::AssignDivide(_, lhs, rhs) => lhs.bin_op_doc("/=", rhs),
+            Expression::AssignModulo(_, lhs, rhs) => lhs.bin_op_doc("%=", rhs),
+            Expression::Multiply(_, left, right) => left.bin_op_doc("*", right),
+            Expression::Divide(_, left, right) => left.bin_op_doc("/", right),
+            Expression::Modulo(_, left, right) => left.bin_op_doc("%", right),
+            Expression::Add(_, left, right) => left.bin_op_doc("+", right),
+            Expression::Subtract(_, left, right) => left.bin_op_doc("-", right),
+            Expression::ShiftLeft(_, left, right) => left.bin_op_doc("<<", right),
+            Expression::ShiftRight(_, left, right) => left.bin_op_doc(">>", right),
+            Expression::Less(_, left, right) => left.bin_op_doc("<", right),
+            Expression::More(_, left, right) => left.bin_op_doc(">", right),
+            Expression::LessEqual(_, left, right) => left.bin_op_doc("<=", right),
+            Expression::MoreEqual(_, left, right) => left.bin_op_doc("=>", right),
+            Expression::Equal(_, left, right) => left.bin_op_doc("==", right),
+            Expression::NotEqual(_, left, right) => left.bin_op_doc("!=", right),
+            Expression::And(_, left, right) => left.bin_op_doc("&&", right),
+            Expression::And(_, left, right) => left.bin_op_doc("||", right),
+            Expression::NumberLiteral(_, num, _) => RcDoc::text(num),
+            Expression::Type(_, ty) => ty.to_doc(),
             Expression::Variable(id) => id.to_doc(),
             _ => panic!(),
         }
+    }
+
+    fn bin_op_doc<'a>(&'a self, op: &'a str, right: &'a Expression) -> RcDoc<'a> {
+        self.to_doc()
+            .append(RcDoc::space())
+            .append(op.to_string())
+            .append(RcDoc::space())
+            .append(right.to_doc())
     }
 }
 
@@ -634,16 +686,6 @@ impl CodeLocation for Expression {
             | Expression::AddressLiteral(loc, _) => *loc,
             Expression::StringLiteral(v) => v[0].loc,
             Expression::HexLiteral(v) => v[0].loc,
-        }
-    }
-}
-
-impl Display for Expression {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Expression::Variable(id) => write!(f, "{}", id.name),
-            Expression::MemberAccess(_, e, id) => write!(f, "{}.{}", e, id.name),
-            _ => unimplemented!(),
         }
     }
 }
