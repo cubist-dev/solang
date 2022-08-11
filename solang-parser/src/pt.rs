@@ -320,7 +320,8 @@ impl ContractPart {
     pub fn to_doc(&self) -> RcDoc<()> {
         match self {
             ContractPart::FunctionDefinition(fd) => fd.to_doc(),
-            _ => panic!(),
+            ContractPart::VariableDefinition(vd) => vd.to_doc().append(";"),
+            _ => panic!("{:#?}", self),
         }
     }
 
@@ -461,6 +462,16 @@ pub struct VariableDefinition {
     pub initializer: Option<Expression>,
 }
 
+impl VariableDefinition {
+    pub fn to_doc(&self) -> RcDoc<()> {
+        assert!(self.attrs.is_empty());
+        self.ty
+            .to_doc()
+            .append(RcDoc::space())
+            .append(self.name.to_doc())
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct TypeDefinition {
     pub loc: Loc,
@@ -581,6 +592,14 @@ impl Expression {
             Expression::Parenthesis(_, expr) => RcDoc::text("(")
                 .append(expr.to_doc())
                 .append(RcDoc::text(")")),
+            Expression::FunctionCall(_, fun, args) => fun
+                .to_doc()
+                .append("(")
+                .append(RcDoc::intersperse(
+                    args.iter().map(|x| x.to_doc()),
+                    RcDoc::text(","),
+                ))
+                .append(")"),
             Expression::MemberAccess(_, contract, field) => {
                 contract.to_doc().append(".").append(field.to_doc())
             }
@@ -601,7 +620,7 @@ impl Expression {
             Expression::Less(_, left, right) => left.bin_op_doc("<", right),
             Expression::More(_, left, right) => left.bin_op_doc(">", right),
             Expression::LessEqual(_, left, right) => left.bin_op_doc("<=", right),
-            Expression::MoreEqual(_, left, right) => left.bin_op_doc("=>", right),
+            Expression::MoreEqual(_, left, right) => left.bin_op_doc(">=", right),
             Expression::Equal(_, left, right) => left.bin_op_doc("==", right),
             Expression::NotEqual(_, left, right) => left.bin_op_doc("!=", right),
             Expression::And(_, left, right) => left.bin_op_doc("&&", right),
@@ -710,7 +729,12 @@ pub struct Parameter {
 
 impl Parameter {
     pub fn to_doc(&self) -> RcDoc<()> {
-        panic!()
+        assert!(self.name.is_some());
+        assert!(self.storage.is_none());
+        self.ty
+            .to_doc()
+            .append(RcDoc::space())
+            .append(self.name.as_ref().unwrap().to_doc())
     }
 }
 
@@ -819,15 +843,26 @@ pub struct FunctionDefinition {
 
 impl FunctionDefinition {
     pub fn to_doc(&self) -> RcDoc<()> {
-        RcDoc::text("function")
-            .append(Doc::space())
-            .append(self.name.as_ref().unwrap().to_doc())
-            .append(Doc::space())
-            .append(RcDoc::text("("))
-            .append(param_list_to_doc(&self.params))
-            .append(RcDoc::text(")"))
-            .append(RcDoc::space())
-            .append(self.body.as_ref().unwrap().to_doc())
+        assert!(self.name.is_some() || self.ty == FunctionTy::Constructor);
+        if self.name.is_none() {
+            RcDoc::text("constructor")
+                .append(Doc::space())
+                .append("(")
+                .append(param_list_to_doc(&self.params))
+                .append(")")
+                .append(RcDoc::space())
+                .append(self.body.as_ref().unwrap().to_doc())
+        } else {
+            RcDoc::text("function")
+                .append(Doc::space())
+                .append(self.name.as_ref().unwrap().to_doc())
+                .append(Doc::space())
+                .append(RcDoc::text("("))
+                .append(param_list_to_doc(&self.params))
+                .append(RcDoc::text(")"))
+                .append(RcDoc::space())
+                .append(self.body.as_ref().unwrap().to_doc())
+        }
     }
 }
 
