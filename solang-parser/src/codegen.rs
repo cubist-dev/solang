@@ -23,6 +23,30 @@ pub fn call_expr(name: String, args: Vec<String>) -> pt::Expression {
     )
 }
 
+pub fn emit_stmt(name: String) -> pt::Statement {
+    pt::Statement::Emit(pt::Loc::Codegen, var_expr(name))
+}
+
+pub fn block_stmt(stmts: Vec<pt::Statement>) -> pt::Statement {
+    pt::Statement::Block {
+        loc: pt::Loc::Codegen,
+        unchecked: true,
+        statements: stmts,
+    }
+}
+
+pub fn event_def(name: String, params: Vec<(String, pt::Type)>) -> pt::EventDefinition {
+    pt::EventDefinition {
+        loc: pt::Loc::Codegen,
+        name: id(name),
+        fields: params
+            .into_iter()
+            .map(|x| event_parameter(x.0, x.1))
+            .collect(),
+        anonymous: false,
+    }
+}
+
 pub fn function_def(
     name: String,
     params: Vec<(String, pt::Type)>,
@@ -48,6 +72,15 @@ pub fn annon_parameter(ty: pt::Type) -> pt::Parameter {
         ty: type_expr(ty),
         storage: None,
         name: None,
+    }
+}
+
+pub fn event_parameter(name: String, ty: pt::Type) -> pt::EventParameter {
+    pt::EventParameter {
+        ty: type_expr(ty),
+        loc: pt::Loc::Codegen,
+        indexed: false,
+        name: Some(id(name)),
     }
 }
 
