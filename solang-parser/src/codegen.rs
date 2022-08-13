@@ -23,8 +23,8 @@ pub fn call_expr(name: String, args: Vec<String>) -> pt::Expression {
     )
 }
 
-pub fn emit_stmt(name: String) -> pt::Statement {
-    pt::Statement::Emit(pt::Loc::Codegen, var_expr(name))
+pub fn emit_stmt(name: String, args: Vec<String>) -> pt::Statement {
+    pt::Statement::Emit(pt::Loc::Codegen, call_expr(name, args))
 }
 
 pub fn block_stmt(stmts: Vec<pt::Statement>) -> pt::Statement {
@@ -50,7 +50,7 @@ pub fn event_def(name: String, params: Vec<(String, pt::Type)>) -> pt::EventDefi
 pub fn function_def(
     name: String,
     params: Vec<(String, pt::Type)>,
-    ret: pt::Type,
+    ret: Option<pt::Type>,
     body: pt::Statement,
 ) -> pt::FunctionDefinition {
     pt::FunctionDefinition {
@@ -61,7 +61,7 @@ pub fn function_def(
         params: parameter_list(params),
         attributes: Vec::new(),
         return_not_returns: None,
-        returns: annon_parameter_list(vec![ret]),
+        returns: annon_parameter_list(ret.map_or_else(|| Vec::new(), |r| vec![r])),
         body: Some(body),
     }
 }
