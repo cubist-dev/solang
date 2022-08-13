@@ -329,9 +329,10 @@ pub enum ContractPart {
 impl ContractPart {
     pub fn to_doc(&self) -> RcDoc<()> {
         match self {
+	    ContractPart::EventDefinition(ed) => ed.to_doc(),
             ContractPart::FunctionDefinition(fd) => fd.to_doc(),
             ContractPart::VariableDefinition(vd) => vd.to_doc().append(";"),
-            _ => panic!("{:#?}", self),
+            _ => panic!("Unsupported contract part: {:#?}", self),
         }
     }
 
