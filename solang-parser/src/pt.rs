@@ -329,7 +329,7 @@ pub enum ContractPart {
 impl ContractPart {
     pub fn to_doc(&self) -> RcDoc<()> {
         match self {
-	    ContractPart::EventDefinition(ed) => ed.to_doc(),
+            ContractPart::EventDefinition(ed) => ed.to_doc(),
             ContractPart::FunctionDefinition(fd) => fd.to_doc(),
             ContractPart::VariableDefinition(vd) => vd.to_doc().append(";"),
             _ => panic!("Unsupported contract part: {:#?}", self),
@@ -981,7 +981,10 @@ impl Statement {
             Statement::Return(_, None) => RcDoc::text("return;"),
             Statement::Revert(..) => panic!("Revert printing not supported"),
             Statement::RevertNamedArgs(..) => panic!("Revert named args printing not supported"),
-            Statement::Emit(..) => panic!("Emit printing not supported"),
+            Statement::Emit(_, expr) => RcDoc::text("emit")
+                .append(RcDoc::space())
+                .append(expr.to_doc())
+                .append(RcDoc::text(";")),
             Statement::Try(..) => panic!("Try printing not supported"),
             _ => panic!(),
         }
