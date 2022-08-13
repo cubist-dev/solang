@@ -35,6 +35,10 @@ pub fn block_stmt(stmts: Vec<pt::Statement>) -> pt::Statement {
     }
 }
 
+pub fn contract_part(stmt: pt::FunctionDefinition) -> pt::ContractPart {
+    pt::ContractPart::FunctionDefinition(Box::new(stmt))
+}
+
 pub fn event_def(name: String, params: Vec<(String, pt::Type)>) -> pt::EventDefinition {
     pt::EventDefinition {
         loc: pt::Loc::Codegen,
