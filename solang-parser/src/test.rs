@@ -53,12 +53,7 @@ contract AvaStorage {
     let pt = solidity::SourceUnitParser::new()
         .parse(src, 0, lex)
         .unwrap();
-    //    println!("{:#?}", pt);
-    let mut s = String::new();
-    let doc = pt.to_doc();
-    doc.render_fmt(70, &mut s).unwrap();
-    //println!("{:#?}", doc);
-    println!("{}", s);
+    println!("{}", pt);
 }
 
 #[test]

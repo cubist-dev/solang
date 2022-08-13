@@ -138,6 +138,15 @@ pub enum Comment {
 #[derive(Debug, PartialEq, Clone)]
 pub struct SourceUnit(pub Vec<SourceUnitPart>);
 
+impl fmt::Display for SourceUnit {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut s = String::new();
+        let doc = self.to_doc();
+        doc.render_fmt(70, &mut s).unwrap();
+        write!(f, "{}", s)
+    }
+}
+
 impl SourceUnit {
     pub fn to_doc(&self) -> RcDoc<()> {
         RcDoc::nil().append(RcDoc::intersperse(
@@ -166,6 +175,7 @@ pub enum SourceUnitPart {
 impl SourceUnitPart {
     pub fn to_doc(&self) -> RcDoc<()> {
         match self {
+            SourceUnitPart::EventDefinition(ed) => ed.to_doc(),
             SourceUnitPart::ContractDefinition(cd) => cd.to_doc(),
             _ => panic!(),
         }
@@ -416,12 +426,36 @@ pub struct EventParameter {
     pub name: Option<Identifier>,
 }
 
+impl EventParameter {
+    pub fn to_doc(&self) -> RcDoc<()> {
+        self.ty
+            .to_doc()
+            .append(RcDoc::space())
+            .append(self.name.as_ref().unwrap().to_doc())
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct EventDefinition {
     pub loc: Loc,
     pub name: Identifier,
     pub fields: Vec<EventParameter>,
     pub anonymous: bool,
+}
+
+impl EventDefinition {
+    pub fn to_doc(&self) -> RcDoc<()> {
+        RcDoc::text("event")
+            .append(RcDoc::space())
+            .append(self.name.to_doc())
+            .append(RcDoc::space())
+            .append(RcDoc::text("("))
+            .append(RcDoc::intersperse(
+                self.fields.iter().map(|x| x.to_doc()),
+                RcDoc::text(",").append(RcDoc::space()),
+            ))
+            .append(RcDoc::text(");"))
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
