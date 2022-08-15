@@ -2,6 +2,8 @@
 
 use pretty::{Doc, RcDoc};
 use std::fmt::{self, Display};
+use std::hash::Hash;
+use std::hash::Hasher;
 
 #[derive(Debug, PartialEq, PartialOrd, Ord, Eq, Hash, Clone, Copy)]
 /// file no, start offset, end offset (in bytes)
@@ -313,6 +315,12 @@ pub struct StructDefinition {
     pub fields: Vec<VariableDeclaration>,
 }
 
+impl<'a> Hash for &'a StructDefinition {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        std::ptr::hash(*self, state)
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum ContractPart {
     StructDefinition(Box<StructDefinition>),
@@ -442,6 +450,12 @@ pub struct EventDefinition {
     pub name: Identifier,
     pub fields: Vec<EventParameter>,
     pub anonymous: bool,
+}
+
+impl<'a> Hash for &'a EventDefinition {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        std::ptr::hash(*self, state)
+    }
 }
 
 impl EventDefinition {
@@ -898,6 +912,12 @@ impl FunctionDefinition {
                 .append(RcDoc::space())
                 .append(self.body.as_ref().unwrap().to_doc())
         }
+    }
+}
+
+impl<'a> Hash for &'a FunctionDefinition {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        std::ptr::hash(*self, state)
     }
 }
 
