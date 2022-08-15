@@ -915,6 +915,8 @@ impl FunctionDefinition {
     }
 }
 
+impl<'a> Eq for &'a FunctionDefinition {}
+
 impl<'a> Hash for &'a FunctionDefinition {
     fn hash<H: Hasher>(&self, state: &mut H) {
         std::ptr::hash(*self, state)
