@@ -427,6 +427,14 @@ impl ContractDefinition {
     }
 }
 
+impl<'a> Eq for &'a ContractDefinition {}
+
+impl<'a> Hash for &'a ContractDefinition {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        std::ptr::hash(*self, state)
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct EventParameter {
     pub ty: Expression,
