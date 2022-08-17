@@ -638,6 +638,14 @@ pub enum Expression {
     This(Loc),
 }
 
+impl<'a> Eq for &'a Expression {}
+
+impl<'a> Hash for &'a Expression {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        std::ptr::hash(*self, state)
+    }
+}
+
 impl Expression {
     pub fn to_doc(&self) -> RcDoc<()> {
         match self {
