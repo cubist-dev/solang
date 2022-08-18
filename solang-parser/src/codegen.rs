@@ -15,15 +15,11 @@ pub fn type_expr(ty: pt::Type) -> pt::Expression {
     pt::Expression::Type(pt::Loc::Codegen, ty)
 }
 
-pub fn call_expr(name: String, args: Vec<String>) -> pt::Expression {
-    pt::Expression::FunctionCall(
-        pt::Loc::Codegen,
-        Box::new(var_expr(name)),
-        args.into_iter().map(|x| var_expr(x)).collect(),
-    )
+pub fn call_expr(name: String, args: Vec<pt::Expression>) -> pt::Expression {
+    pt::Expression::FunctionCall(pt::Loc::Codegen, Box::new(var_expr(name)), args)
 }
 
-pub fn emit_stmt(name: String, args: Vec<String>) -> pt::Statement {
+pub fn emit_stmt(name: String, args: Vec<pt::Expression>) -> pt::Statement {
     pt::Statement::Emit(pt::Loc::Codegen, call_expr(name, args))
 }
 
