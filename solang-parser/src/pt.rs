@@ -409,6 +409,15 @@ pub struct ContractDefinition {
     pub parts: Vec<ContractPart>,
 }
 
+impl fmt::Display for ContractDefinition {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut s = String::new();
+        let doc = self.to_doc();
+        doc.render_fmt(70, &mut s).unwrap();
+        write!(f, "{}", s)
+    }
+}
+
 impl ContractDefinition {
     pub fn to_doc(&self) -> RcDoc<()> {
         RcDoc::text("contract")
