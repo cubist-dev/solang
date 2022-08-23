@@ -177,8 +177,17 @@ pub enum SourceUnitPart {
 impl SourceUnitPart {
     pub fn to_doc(&self) -> RcDoc<()> {
         match self {
-            SourceUnitPart::EventDefinition(ed) => ed.to_doc(),
             SourceUnitPart::ContractDefinition(cd) => cd.to_doc(),
+            SourceUnitPart::PragmaDirective(loc, id, string) => RcDoc::text("pragma ")
+                .append(id.to_doc())
+                .append(RcDoc::space())
+                .append(string.string.clone())
+                .append(";")
+                .append(RcDoc::hardline()),
+            SourceUnitPart::ImportDirective(import) => {
+                RcDoc::text("import ").append(import.to_doc()).append(";")
+            }
+            SourceUnitPart::EventDefinition(ed) => ed.to_doc(),
             _ => panic!(),
         }
     }
@@ -209,6 +218,13 @@ pub enum Import {
 }
 
 impl Import {
+    pub fn to_doc(&self) -> RcDoc<()> {
+        match self {
+            Import::Plain(string, _) => string.to_doc(),
+            _ => panic!(),
+        }
+    }
+
     pub fn loc(&self) -> &Loc {
         match self {
             Import::Plain(_, loc) => loc,
@@ -550,6 +566,15 @@ pub struct StringLiteral {
     pub loc: Loc,
     pub unicode: bool,
     pub string: String,
+}
+
+impl StringLiteral {
+    pub fn to_doc(&self) -> RcDoc<()> {
+        assert!(!self.unicode);
+        RcDoc::text("\"")
+            .append(RcDoc::text(self.string.clone()))
+            .append(RcDoc::text("\""))
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]

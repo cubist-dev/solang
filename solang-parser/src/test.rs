@@ -12,6 +12,10 @@ use walkdir::WalkDir;
 #[test]
 fn print_test() {
     let src = r#"
+pragma solidity >=0.7.0 <0.9.0;
+
+import "./Foo.sol";
+
 contract AvaStorage {                                                                             
                                                                                                   
     EthStorage ethStorage;                                                                        
