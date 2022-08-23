@@ -138,7 +138,7 @@ pub enum Comment {
 }
 
 impl Comment {
-    fn get_contents(&self) -> &String {
+    pub fn get_contents(&self) -> &String {
         match self {
             Comment::Line(_, s) => s,
             Comment::Block(_, s) => s,
