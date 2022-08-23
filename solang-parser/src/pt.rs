@@ -205,7 +205,7 @@ impl SourceUnitPart {
                 .append(";")
                 .append(RcDoc::hardline()),
             SourceUnitPart::ImportDirective(import) => {
-                RcDoc::text("import ").append(import.to_doc()).append(";")
+		import.to_doc().append(";")
             }
             SourceUnitPart::EventDefinition(ed) => ed.to_doc(),
             _ => panic!(),
@@ -249,7 +249,9 @@ impl fmt::Display for Import {
 impl Import {
     pub fn to_doc(&self) -> RcDoc<()> {
         match self {
-            Import::Plain(string, _) => string.to_doc(),
+            Import::Plain(string, _) => RcDoc::text("import")
+		.append(RcDoc::space())
+		.append(string.to_doc()),
             _ => panic!(),
         }
     }
