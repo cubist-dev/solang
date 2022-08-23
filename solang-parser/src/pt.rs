@@ -137,6 +137,17 @@ pub enum Comment {
     DocBlock(Loc, String),
 }
 
+impl Comment {
+    fn get_contents(&self) -> &String {
+        match self {
+            Comment::Line(_, s) => s,
+            Comment::Block(_, s) => s,
+            Comment::DocLine(_, s) => s,
+            Comment::DocBlock(_, s) => s,
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct SourceUnit(pub Vec<SourceUnitPart>);
 
