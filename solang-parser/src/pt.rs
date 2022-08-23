@@ -237,6 +237,15 @@ pub enum Import {
     Rename(StringLiteral, Vec<(Identifier, Option<Identifier>)>, Loc),
 }
 
+impl fmt::Display for Import {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut s = String::new();
+        let doc = self.to_doc();
+        doc.render_fmt(70, &mut s).unwrap();
+        write!(f, "{}", s)
+    }
+}
+
 impl Import {
     pub fn to_doc(&self) -> RcDoc<()> {
         match self {
