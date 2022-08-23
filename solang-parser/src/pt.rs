@@ -185,6 +185,15 @@ pub enum SourceUnitPart {
     StraySemicolon(Loc),
 }
 
+impl fmt::Display for SourceUnitPart {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut s = String::new();
+        let doc = self.to_doc();
+        doc.render_fmt(70, &mut s).unwrap();
+        write!(f, "{}", s)
+    }
+}
+
 impl SourceUnitPart {
     pub fn to_doc(&self) -> RcDoc<()> {
         match self {
