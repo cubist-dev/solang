@@ -207,6 +207,7 @@ impl SourceUnitPart {
             SourceUnitPart::ImportDirective(import) => import.to_doc().append(";"),
             SourceUnitPart::EventDefinition(ed) => ed.to_doc().append(";"),
             SourceUnitPart::ErrorDefinition(ed) => ed.to_doc().append(";"),
+            SourceUnitPart::EnumDefinition(ed) => ed.to_doc().append(";"),
             _ => panic!(),
         }
     }
@@ -556,7 +557,7 @@ impl EventDefinition {
                 self.fields.iter().map(|x| x.to_doc()),
                 RcDoc::text(",").append(RcDoc::space()),
             ))
-	    .append(")")
+            .append(")")
     }
 }
 
@@ -601,6 +602,24 @@ pub struct EnumDefinition {
     pub loc: Loc,
     pub name: Identifier,
     pub values: Vec<Identifier>,
+}
+
+impl EnumDefinition {
+    pub fn to_doc(&self) -> RcDoc<()> {
+        RcDoc::text("enum")
+            .append(RcDoc::space())
+            .append(self.name.to_doc())
+            .append(RcDoc::space())
+            .append("{")
+            .append(RcDoc::hardline())
+            .append(RcDoc::intersperse(
+                self.values.iter().map(|x| x.to_doc()),
+                RcDoc::text(",").append(RcDoc::hardline()),
+            ))
+            .nest(4)
+            .append(RcDoc::hardline())
+            .append("}")
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]

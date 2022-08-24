@@ -25,6 +25,11 @@ import * as globalSymbolName from "<filename>";
 
 error MyError__Error();
 
+    enum State {
+        OPEN,                                                                                                                                                                         
+        CLOSED
+    }
+
 contract AvaStorage {                                                                             
                                                                                                   
     EthStorage ethStorage;                                                                        
