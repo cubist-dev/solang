@@ -5,6 +5,27 @@ use std::fmt::{self, Display};
 use std::hash::Hash;
 use std::hash::Hasher;
 
+pub trait Docable {
+    fn to_doc(&self) -> RcDoc<()>;
+}
+
+pub fn list_to_doc<'a, T: 'a + Docable>(vec: &'a Vec<T>) -> RcDoc<'a> {
+    RcDoc::intersperse(
+        vec.iter().map(|x| x.to_doc()),
+        RcDoc::text(",").append(RcDoc::space()),
+    )
+}
+
+pub fn option_to_doc<'a, T: 'a + Docable>(opt: &'a Option<T>) -> RcDoc<'a> {
+    opt.as_ref()
+        .and_then(|x| Some(x.to_doc()))
+        .unwrap_or(RcDoc::nil())
+}
+
+pub fn paren_list_to_doc<'a, T: 'a + Docable>(vec: &'a Vec<T>) -> RcDoc<'a> {
+    RcDoc::text("(").append(list_to_doc(vec)).append(")")
+}
+
 #[derive(Debug, PartialEq, PartialOrd, Ord, Eq, Hash, Clone, Copy)]
 /// file no, start offset, end offset (in bytes)
 pub enum Loc {
@@ -96,9 +117,9 @@ pub struct Identifier {
     pub name: String,
 }
 
-impl Identifier {
-    pub fn to_doc(&self) -> RcDoc<()> {
-        RcDoc::text(self.name.clone())
+impl Docable for Identifier {
+    fn to_doc(&self) -> RcDoc<()> {
+        RcDoc::text(self.to_string())
     }
 }
 
@@ -112,6 +133,12 @@ impl Display for Identifier {
 pub struct IdentifierPath {
     pub loc: Loc,
     pub identifiers: Vec<Identifier>,
+}
+
+impl Docable for IdentifierPath {
+    fn to_doc(&self) -> RcDoc<()> {
+        RcDoc::text(self.to_string())
+    }
 }
 
 impl Display for IdentifierPath {
@@ -160,12 +187,9 @@ impl fmt::Display for SourceUnit {
     }
 }
 
-impl SourceUnit {
-    pub fn to_doc(&self) -> RcDoc<()> {
-        RcDoc::nil().append(RcDoc::intersperse(
-            self.0.iter().map(|x| x.to_doc()),
-            Doc::hardline(),
-        ))
+impl Docable for SourceUnit {
+    fn to_doc(&self) -> RcDoc<()> {
+        RcDoc::intersperse(self.0.iter().map(|x| x.to_doc()), Doc::hardline())
     }
 }
 
@@ -194,8 +218,8 @@ impl fmt::Display for SourceUnitPart {
     }
 }
 
-impl SourceUnitPart {
-    pub fn to_doc(&self) -> RcDoc<()> {
+impl Docable for SourceUnitPart {
+    fn to_doc(&self) -> RcDoc<()> {
         match self {
             SourceUnitPart::ContractDefinition(cd) => cd.to_doc(),
             SourceUnitPart::PragmaDirective(loc, id, string) => RcDoc::text("pragma ")
@@ -208,10 +232,12 @@ impl SourceUnitPart {
             SourceUnitPart::EventDefinition(ed) => ed.to_doc().append(";"),
             SourceUnitPart::ErrorDefinition(ed) => ed.to_doc().append(";"),
             SourceUnitPart::EnumDefinition(ed) => ed.to_doc().append(";"),
-            _ => panic!(),
+            _ => panic!("Unsupported source unit part: {:#?}", self),
         }
     }
+}
 
+impl SourceUnitPart {
     pub fn loc(&self) -> &Loc {
         match self {
             SourceUnitPart::ContractDefinition(def) => &def.loc,
@@ -246,8 +272,8 @@ impl fmt::Display for Import {
     }
 }
 
-impl Import {
-    pub fn to_doc(&self) -> RcDoc<()> {
+impl Docable for Import {
+    fn to_doc(&self) -> RcDoc<()> {
         match self {
             Import::Plain(string, _) => RcDoc::text("import")
                 .append(RcDoc::space())
@@ -279,7 +305,9 @@ impl Import {
                 .append(string.to_doc()),
         }
     }
+}
 
+impl Import {
     pub fn loc(&self) -> &Loc {
         match self {
             Import::Plain(_, loc) => loc,
@@ -478,6 +506,22 @@ pub struct Base {
     pub args: Option<Vec<Expression>>,
 }
 
+impl Base {
+    pub fn to_doc(&self) -> RcDoc<()> {
+        let args = if self.args.is_none() {
+            RcDoc::nil()
+        } else {
+            RcDoc::text("(")
+                .append(RcDoc::intersperse(
+                    self.args.as_ref().unwrap().iter().map(|x| x.to_doc()),
+                    RcDoc::text(", "),
+                ))
+                .append(RcDoc::text(")"))
+        };
+        RcDoc::text(self.name.to_string()).append(args)
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct ContractDefinition {
     pub loc: Loc,
@@ -535,6 +579,11 @@ impl EventParameter {
         self.ty
             .to_doc()
             .append(RcDoc::space())
+            .append(if self.indexed {
+                RcDoc::text("indexed ")
+            } else {
+                RcDoc::nil()
+            })
             .append(self.name.as_ref().unwrap().to_doc())
     }
 }
@@ -596,11 +645,12 @@ impl ErrorDefinition {
         RcDoc::text("error")
             .append(RcDoc::space())
             .append(self.name.to_doc())
-            .append(RcDoc::space())
+            .append(RcDoc::text("("))
             .append(RcDoc::intersperse(
                 self.fields.iter().map(|x| x.to_doc()),
                 RcDoc::text(",").append(RcDoc::space()),
             ))
+            .append(RcDoc::text(")"))
     }
 }
 
@@ -659,11 +709,7 @@ pub struct VariableDefinition {
 
 impl VariableDefinition {
     pub fn to_doc(&self) -> RcDoc<()> {
-        let init = self
-            .initializer
-            .as_ref()
-            .and_then(|x| Some(x.to_doc()))
-            .unwrap_or(RcDoc::nil());
+        let init = option_to_doc(&self.initializer);
         let attrs = if self.attrs.is_empty() {
             RcDoc::nil()
         } else {
@@ -720,6 +766,15 @@ pub struct NamedArgument {
     pub loc: Loc,
     pub name: Identifier,
     pub expr: Expression,
+}
+
+impl NamedArgument {
+    pub fn to_doc(&self) -> RcDoc<()> {
+        self.name
+            .to_doc()
+            .append(RcDoc::space())
+            .append(self.expr.to_doc())
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -812,10 +867,10 @@ impl<'a> Hash for &'a Expression {
     }
 }
 
-impl Expression {
-    pub fn to_doc(&self) -> RcDoc<()> {
+impl Docable for Expression {
+    fn to_doc(&self) -> RcDoc<()> {
         match self {
-            Expression::PostIncrement(_, expr) => expr.to_doc().append(RcDoc::text("++")),
+            Expression::PreIncrement(_, expr) => expr.to_doc().append(RcDoc::text("++")),
             Expression::PostIncrement(_, expr) => expr.to_doc().append(RcDoc::text("--")),
             Expression::New(_, expr) => RcDoc::text("new").append(expr.to_doc()),
             Expression::ArraySubscript(_, expr, mexpr) => expr
@@ -864,7 +919,7 @@ impl Expression {
             Expression::Equal(_, left, right) => left.bin_op_doc("==", right),
             Expression::NotEqual(_, left, right) => left.bin_op_doc("!=", right),
             Expression::And(_, left, right) => left.bin_op_doc("&&", right),
-            Expression::And(_, left, right) => left.bin_op_doc("||", right),
+            Expression::Or(_, left, right) => left.bin_op_doc("||", right),
             Expression::NumberLiteral(_, num, _) => RcDoc::text(num),
             Expression::Type(_, ty) => ty.to_doc(),
             Expression::Variable(id) => id.to_doc(),
@@ -873,10 +928,15 @@ impl Expression {
             Expression::StringLiteral(lits) => {
                 RcDoc::intersperse(lits.iter().map(|x| x.to_doc()), RcDoc::text(", "))
             }
+            Expression::FunctionCallBlock(_, base, expr) => {
+                base.to_doc().append("{").append(expr.to_doc()).append("}")
+            }
             _ => panic!("{:#?}", self),
         }
     }
+}
 
+impl Expression {
     fn bin_op_doc<'a>(&'a self, op: &'a str, right: &'a Expression) -> RcDoc<'a> {
         self.to_doc()
             .append(RcDoc::space())
@@ -1060,6 +1120,22 @@ pub enum FunctionAttribute {
     BaseOrModifier(Loc, Base),
 }
 
+impl FunctionAttribute {
+    pub fn to_doc(&self) -> RcDoc<()> {
+        match self {
+            FunctionAttribute::Virtual(..) => RcDoc::text("virtual"),
+            FunctionAttribute::Immutable(..) => RcDoc::text("immutable"),
+            FunctionAttribute::Mutability(mutability) => RcDoc::text(mutability.to_string()),
+            FunctionAttribute::Visibility(visibility) => RcDoc::text(visibility.to_string()),
+            FunctionAttribute::Override(_, ids) => RcDoc::text("override ").append(
+                RcDoc::intersperse(ids.iter().map(|x| x.to_string()), RcDoc::text(", ")),
+            ),
+            FunctionAttribute::BaseOrModifier(_, base) => base.to_doc(),
+            _ => panic!("{:#?}", self),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum FunctionTy {
     Constructor,
@@ -1097,25 +1173,28 @@ pub struct FunctionDefinition {
 impl FunctionDefinition {
     pub fn to_doc(&self) -> RcDoc<()> {
         assert!(self.name.is_some() || self.ty == FunctionTy::Constructor);
-        if self.name.is_none() {
+        let name = if self.name.is_none() {
             RcDoc::text("constructor")
-                .append(Doc::space())
-                .append("(")
-                .append(param_list_to_doc(&self.params))
-                .append(")")
-                .append(RcDoc::space())
-                .append(self.body.as_ref().unwrap().to_doc())
         } else {
             RcDoc::text("function")
-                .append(Doc::space())
-                .append(self.name.as_ref().unwrap().to_doc())
-                .append(Doc::space())
-                .append(RcDoc::text("("))
-                .append(param_list_to_doc(&self.params))
-                .append(RcDoc::text(")"))
                 .append(RcDoc::space())
-                .append(self.body.as_ref().unwrap().to_doc())
-        }
+                .append(self.name.as_ref().unwrap().to_doc())
+        };
+        let returns = if self.returns.is_empty() {
+            RcDoc::nil()
+        } else {
+            RcDoc::text(" returns ").append(param_list_to_doc(&self.returns))
+        };
+        name.append(Doc::space())
+            .append("(")
+            .append(param_list_to_doc(&self.params))
+            .append(")")
+            .append(RcDoc::space())
+            .append(RcDoc::intersperse(
+                self.attributes.iter().map(|x| x.to_doc()),
+                RcDoc::text(", "),
+            ))
+            .append(self.body.as_ref().unwrap().to_doc())
     }
 }
 
@@ -1181,7 +1260,9 @@ impl Statement {
                 .append(RcDoc::hardline())
                 .append("}"),
             Statement::Assembly { .. } => panic!("Assembly printing not supported"),
-            Statement::Args(..) => panic!("Args printing not supported"),
+            Statement::Args(_, args) => {
+                RcDoc::intersperse(args.iter().map(|x| x.to_doc()), RcDoc::text(", "))
+            }
             Statement::If(_, cond, tb, fb) => RcDoc::text("if")
                 .append(RcDoc::space())
                 .append(RcDoc::text("("))
@@ -1219,7 +1300,7 @@ impl Statement {
                         exprs.iter().map(|x| x.to_doc()),
                         RcDoc::text(", "),
                     ))
-                    .append(")")
+                    .append(");")
             }
             Statement::RevertNamedArgs(..) => panic!("Revert named args printing not supported"),
             Statement::Emit(_, expr) => RcDoc::text("emit")
