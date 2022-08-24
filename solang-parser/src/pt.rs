@@ -321,14 +321,15 @@ pub enum Type {
 impl Type {
     pub fn to_doc(&self) -> RcDoc<()> {
         match self {
-            Type::Address => panic!("Address not supported"),
-            Type::AddressPayable => panic!("Address payable not supported"),
+            Type::Address => RcDoc::text("address"),
+            Type::AddressPayable => RcDoc::text("address payable"),
             Type::Payable => panic!("Paypable not supported"),
             Type::Bool => RcDoc::text("bool"),
             Type::String => RcDoc::text("string"),
-            Type::Int(amts) => RcDoc::text("int"),
+            Type::Int(size) => RcDoc::text("int").append(size.to_string()),
             Type::Uint(size) => RcDoc::text("uint").append(size.to_string()),
-            _ => panic!(),
+            Type::Bytes(size) => RcDoc::text("bytes").append(size.to_string()),
+            _ => panic!("{:#?}", self),
         }
     }
 }
@@ -812,7 +813,16 @@ impl Expression {
             Expression::PostIncrement(_, expr) => expr.to_doc().append(RcDoc::text("++")),
             Expression::PostIncrement(_, expr) => expr.to_doc().append(RcDoc::text("--")),
             Expression::New(_, expr) => RcDoc::text("new").append(expr.to_doc()),
-            Expression::ArraySubscript(..) => panic!("Array subscript not supported"),
+            Expression::ArraySubscript(_, expr, mexpr) => expr
+                .to_doc()
+                .append(RcDoc::text("["))
+                .append(
+                    mexpr
+                        .as_ref()
+                        .and_then(|x| Some(x.to_doc()))
+                        .unwrap_or(RcDoc::nil()),
+                )
+                .append(RcDoc::text("]")),
             Expression::ArraySlice(..) => panic!("Array slice not supported"),
             Expression::Parenthesis(_, expr) => RcDoc::text("(")
                 .append(expr.to_doc())
@@ -1177,7 +1187,17 @@ impl Statement {
                 .append(expr.to_doc())
                 .append(RcDoc::text(";")),
             Statement::Return(_, None) => RcDoc::text("return;"),
-            Statement::Revert(..) => panic!("Revert printing not supported"),
+            Statement::Revert(_, id, exprs) => {
+                assert!(id.is_some());
+                RcDoc::text("revert ")
+                    .append(id.as_ref().unwrap().to_string())
+                    .append("(")
+                    .append(RcDoc::intersperse(
+                        exprs.iter().map(|x| x.to_doc()),
+                        RcDoc::text(", "),
+                    ))
+                    .append(")")
+            }
             Statement::RevertNamedArgs(..) => panic!("Revert named args printing not supported"),
             Statement::Emit(_, expr) => RcDoc::text("emit")
                 .append(RcDoc::space())
