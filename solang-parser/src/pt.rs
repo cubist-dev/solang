@@ -5,8 +5,28 @@ use std::fmt::{self, Display};
 use std::hash::Hash;
 use std::hash::Hasher;
 
+#[macro_export]
+macro_rules! tern {
+    ($condition: expr, $_true: expr, $_false: expr) => {
+        if $condition { $_true } else { $_false }
+    };
+}
+
+#[macro_export]
+macro_rules! text {
+    ($str: expr) => {
+	RcDoc::text($str)
+    };
+}
+
 pub trait Docable {
     fn to_doc(&self) -> RcDoc<()>;
+    fn display(&self) -> String {
+        let mut s = String::new();
+        let doc = self.to_doc();
+        doc.render_fmt(70, &mut s).unwrap();
+        s
+    }
 }
 
 pub fn list_to_doc<'a, T: 'a + Docable>(vec: &'a Vec<T>) -> RcDoc<'a> {
@@ -16,7 +36,27 @@ pub fn list_to_doc<'a, T: 'a + Docable>(vec: &'a Vec<T>) -> RcDoc<'a> {
     )
 }
 
+pub fn indent_list_to_doc<'a, T: 'a + Docable>(vec: &'a Vec<T>) -> RcDoc<'a> {
+    RcDoc::intersperse(
+        vec.iter().map(|x| x.to_doc()),
+        RcDoc::text(",").append(RcDoc::hardline())
+    ).nest(4)
+}
+
+pub fn spaced_list_to_doc<'a, T: 'a + Docable>(vec: &'a Vec<T>) -> RcDoc<'a> {
+    RcDoc::intersperse(
+        vec.iter().map(|x| x.to_doc()),
+        RcDoc::space()
+    )
+}
+
 pub fn option_to_doc<'a, T: 'a + Docable>(opt: &'a Option<T>) -> RcDoc<'a> {
+    opt.as_ref()
+        .and_then(|x| Some(x.to_doc()))
+        .unwrap_or(RcDoc::nil())
+}
+
+pub fn option_box_to_doc<'a, T: 'a + Docable>(opt: &'a Option<Box<T>>) -> RcDoc<'a> {
     opt.as_ref()
         .and_then(|x| Some(x.to_doc()))
         .unwrap_or(RcDoc::nil())
@@ -178,12 +218,9 @@ impl Comment {
 #[derive(Debug, PartialEq, Clone)]
 pub struct SourceUnit(pub Vec<SourceUnitPart>);
 
-impl fmt::Display for SourceUnit {
+impl Display for SourceUnit {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut s = String::new();
-        let doc = self.to_doc();
-        doc.render_fmt(70, &mut s).unwrap();
-        write!(f, "{}", s)
+        write!(f, "{}", self.display())
     }
 }
 
@@ -207,15 +244,6 @@ pub enum SourceUnitPart {
     TypeDefinition(Box<TypeDefinition>),
     Using(Box<Using>),
     StraySemicolon(Loc),
-}
-
-impl fmt::Display for SourceUnitPart {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut s = String::new();
-        let doc = self.to_doc();
-        doc.render_fmt(70, &mut s).unwrap();
-        write!(f, "{}", s)
-    }
 }
 
 impl Docable for SourceUnitPart {
@@ -261,15 +289,6 @@ pub enum Import {
     Plain(StringLiteral, Loc),
     GlobalSymbol(StringLiteral, Identifier, Loc),
     Rename(StringLiteral, Vec<(Identifier, Option<Identifier>)>, Loc),
-}
-
-impl fmt::Display for Import {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut s = String::new();
-        let doc = self.to_doc();
-        doc.render_fmt(70, &mut s).unwrap();
-        write!(f, "{}", s)
-    }
 }
 
 impl Docable for Import {
@@ -321,11 +340,7 @@ pub type ParameterList = Vec<(Loc, Option<Parameter>)>;
 
 pub fn param_list_to_doc(ps: &ParameterList) -> RcDoc<()> {
     RcDoc::intersperse(
-        ps.iter().map(|x| {
-            x.1.as_ref()
-                .and_then(|x| Some(x.to_doc()))
-                .unwrap_or(RcDoc::nil())
-        }),
+        ps.iter().map(|x| option_to_doc(&x.1)),
         RcDoc::text(",").append(Doc::space()),
     )
 }
@@ -350,18 +365,18 @@ pub enum Type {
     },
 }
 
-impl Type {
-    pub fn to_doc(&self) -> RcDoc<()> {
+impl Docable for Type {
+    fn to_doc(&self) -> RcDoc<()> {
         match self {
-            Type::Address => RcDoc::text("address"),
-            Type::AddressPayable => RcDoc::text("address payable"),
-            Type::Payable => RcDoc::text("payable"),
-            Type::Bool => RcDoc::text("bool"),
-            Type::String => RcDoc::text("string"),
-            Type::Int(size) => RcDoc::text("int").append(size.to_string()),
-            Type::Uint(size) => RcDoc::text("uint").append(size.to_string()),
-            Type::Bytes(size) => RcDoc::text("bytes").append(size.to_string()),
-            Type::DynamicBytes => RcDoc::text("bytes"),
+            Type::Address => text!("address"),
+            Type::AddressPayable => text!("address payable"),
+            Type::Payable => text!("payable"),
+            Type::Bool => text!("bool"),
+            Type::String => text!("string"),
+            Type::Int(size) => text!("int").append(size.to_string()),
+            Type::Uint(size) => text!("uint").append(size.to_string()),
+            Type::Bytes(size) => text!("bytes").append(size.to_string()),
+            Type::DynamicBytes => text!("bytes"),
             _ => panic!("{:#?}", self),
         }
     }
@@ -372,6 +387,12 @@ pub enum StorageLocation {
     Memory(Loc),
     Storage(Loc),
     Calldata(Loc),
+}
+
+impl Docable for StorageLocation {
+    fn to_doc(&self) -> RcDoc<()> {
+	text!(self.to_string())
+    }
 }
 
 impl CodeLocation for StorageLocation {
@@ -402,8 +423,8 @@ pub struct VariableDeclaration {
     pub name: Identifier,
 }
 
-impl VariableDeclaration {
-    pub fn to_doc(&self) -> RcDoc<()> {
+impl Docable for VariableDeclaration {
+    fn to_doc(&self) -> RcDoc<()> {
         assert!(self.storage.is_none());
         self.ty
             .to_doc()
@@ -439,8 +460,8 @@ pub enum ContractPart {
     Using(Box<Using>),
 }
 
-impl ContractPart {
-    pub fn to_doc(&self) -> RcDoc<()> {
+impl Docable for ContractPart {
+    fn to_doc(&self) -> RcDoc<()> {
         match self {
             ContractPart::EventDefinition(ed) => ed.to_doc().append(";"),
             ContractPart::FunctionDefinition(fd) => fd.to_doc(),
@@ -449,7 +470,9 @@ impl ContractPart {
             _ => panic!("Unsupported contract part: {:#?}", self),
         }
     }
+}
 
+impl ContractPart {    
     // Return the location of the part. Note that this excluded the body of the function
     pub fn loc(&self) -> &Loc {
         match self {
@@ -488,6 +511,12 @@ pub enum ContractTy {
     Library(Loc),
 }
 
+impl Docable for ContractTy {
+    fn to_doc(&self) -> RcDoc<()> {
+	text!(self.to_string())
+    }
+}
+
 impl fmt::Display for ContractTy {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -506,19 +535,12 @@ pub struct Base {
     pub args: Option<Vec<Expression>>,
 }
 
-impl Base {
-    pub fn to_doc(&self) -> RcDoc<()> {
-        let args = if self.args.is_none() {
-            RcDoc::nil()
-        } else {
-            RcDoc::text("(")
-                .append(RcDoc::intersperse(
-                    self.args.as_ref().unwrap().iter().map(|x| x.to_doc()),
-                    RcDoc::text(", "),
-                ))
-                .append(RcDoc::text(")"))
-        };
-        RcDoc::text(self.name.to_string()).append(args)
+impl Docable for Base {
+    fn to_doc(&self) -> RcDoc<()> {
+	let args = tern!(self.args.is_some(),
+			 paren_list_to_doc(self.args.as_ref().unwrap()),
+			 RcDoc::nil());
+	self.name.to_doc().append(args)
     }
 }
 
@@ -531,17 +553,8 @@ pub struct ContractDefinition {
     pub parts: Vec<ContractPart>,
 }
 
-impl fmt::Display for ContractDefinition {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut s = String::new();
-        let doc = self.to_doc();
-        doc.render_fmt(70, &mut s).unwrap();
-        write!(f, "{}", s)
-    }
-}
-
-impl ContractDefinition {
-    pub fn to_doc(&self) -> RcDoc<()> {
+impl Docable for ContractDefinition {
+    fn to_doc(&self) -> RcDoc<()> {
         RcDoc::text("contract")
             .append(RcDoc::space())
             .append(self.name.to_doc())
@@ -555,6 +568,12 @@ impl ContractDefinition {
             ))
             .append(RcDoc::line())
             .append(RcDoc::text("}"))
+    }
+}
+
+impl fmt::Display for ContractDefinition {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.display())	
     }
 }
 
@@ -574,17 +593,15 @@ pub struct EventParameter {
     pub name: Option<Identifier>,
 }
 
-impl EventParameter {
-    pub fn to_doc(&self) -> RcDoc<()> {
+impl Docable for EventParameter {
+    fn to_doc(&self) -> RcDoc<()> {
         self.ty
             .to_doc()
             .append(RcDoc::space())
-            .append(if self.indexed {
-                RcDoc::text("indexed ")
-            } else {
-                RcDoc::nil()
-            })
-            .append(self.name.as_ref().unwrap().to_doc())
+            .append(tern!(self.indexed,
+			  text!("indexed "),
+			  RcDoc::nil()))
+            .append(option_to_doc(&self.name))
     }
 }
 
@@ -602,18 +619,13 @@ impl<'a> Hash for &'a EventDefinition {
     }
 }
 
-impl EventDefinition {
-    pub fn to_doc(&self) -> RcDoc<()> {
+impl Docable for EventDefinition {
+    fn to_doc(&self) -> RcDoc<()> {
         RcDoc::text("event")
             .append(RcDoc::space())
             .append(self.name.to_doc())
             .append(RcDoc::space())
-            .append(RcDoc::text("("))
-            .append(RcDoc::intersperse(
-                self.fields.iter().map(|x| x.to_doc()),
-                RcDoc::text(",").append(RcDoc::space()),
-            ))
-            .append(")")
+	    .append(paren_list_to_doc(&self.fields))
     }
 }
 
@@ -624,12 +636,12 @@ pub struct ErrorParameter {
     pub name: Option<Identifier>,
 }
 
-impl ErrorParameter {
-    pub fn to_doc(&self) -> RcDoc<()> {
+impl Docable for ErrorParameter {
+    fn to_doc(&self) -> RcDoc<()> {
         self.ty
             .to_doc()
             .append(RcDoc::space())
-            .append(self.name.as_ref().unwrap().to_doc())
+            .append(option_to_doc(&self.name))
     }
 }
 
@@ -640,17 +652,12 @@ pub struct ErrorDefinition {
     pub fields: Vec<ErrorParameter>,
 }
 
-impl ErrorDefinition {
-    pub fn to_doc(&self) -> RcDoc<()> {
+impl Docable for ErrorDefinition {
+    fn to_doc(&self) -> RcDoc<()> {
         RcDoc::text("error")
             .append(RcDoc::space())
             .append(self.name.to_doc())
-            .append(RcDoc::text("("))
-            .append(RcDoc::intersperse(
-                self.fields.iter().map(|x| x.to_doc()),
-                RcDoc::text(",").append(RcDoc::space()),
-            ))
-            .append(RcDoc::text(")"))
+	    .append(paren_list_to_doc(&self.fields))
     }
 }
 
@@ -661,19 +668,15 @@ pub struct EnumDefinition {
     pub values: Vec<Identifier>,
 }
 
-impl EnumDefinition {
-    pub fn to_doc(&self) -> RcDoc<()> {
-        RcDoc::text("enum")
+impl Docable for EnumDefinition {
+    fn to_doc(&self) -> RcDoc<()> {
+        text!("enum")
             .append(RcDoc::space())
             .append(self.name.to_doc())
             .append(RcDoc::space())
             .append("{")
             .append(RcDoc::hardline())
-            .append(RcDoc::intersperse(
-                self.values.iter().map(|x| x.to_doc()),
-                RcDoc::text(",").append(RcDoc::hardline()),
-            ))
-            .nest(4)
+	    .append(indent_list_to_doc(&self.values))
             .append(RcDoc::hardline())
             .append("}")
     }
@@ -687,12 +690,12 @@ pub enum VariableAttribute {
     Override(Loc, Vec<IdentifierPath>),
 }
 
-impl VariableAttribute {
-    pub fn to_doc(&self) -> RcDoc<()> {
+impl Docable for VariableAttribute {
+    fn to_doc(&self) -> RcDoc<()> {
         match self {
-            VariableAttribute::Visibility(vis) => RcDoc::text(vis.to_string()),
-            VariableAttribute::Constant(..) => RcDoc::text("constant"),
-            VariableAttribute::Immutable(..) => RcDoc::text("immutable"),
+            VariableAttribute::Visibility(vis) => vis.to_doc(),
+            VariableAttribute::Constant(..) => text!("constant"),
+            VariableAttribute::Immutable(..) => text!("immutable"),
             _ => panic!("Not supported: {:#?}", self),
         }
     }
@@ -707,28 +710,23 @@ pub struct VariableDefinition {
     pub initializer: Option<Expression>,
 }
 
-impl VariableDefinition {
-    pub fn to_doc(&self) -> RcDoc<()> {
+impl Docable for VariableDefinition {
+    fn to_doc(&self) -> RcDoc<()> {
+        let attrs = tern!(self.attrs.is_empty(),
+			  RcDoc::nil(),
+			  RcDoc::space().append(spaced_list_to_doc(&self.attrs)));
+	let equal = tern!(self.initializer.is_some(),
+			  text!(" = "),
+			  RcDoc::nil());
         let init = option_to_doc(&self.initializer);
-        let attrs = if self.attrs.is_empty() {
-            RcDoc::nil()
-        } else {
-            RcDoc::space().append(RcDoc::intersperse(
-                self.attrs.iter().map(|x| x.to_doc()),
-                RcDoc::space(),
-            ))
-        };
+	
         self.ty
             .to_doc()
             .append(attrs)
             .append(RcDoc::space())
             .append(self.name.to_doc())
-            .append(if self.initializer.is_some() {
-                RcDoc::text(" = ")
-            } else {
-                RcDoc::nil()
-            })
-            .append(init)
+	    .append(equal)
+	    .append(init)
     }
 }
 
@@ -746,12 +744,12 @@ pub struct StringLiteral {
     pub string: String,
 }
 
-impl StringLiteral {
-    pub fn to_doc(&self) -> RcDoc<()> {
+impl Docable for StringLiteral {
+    fn to_doc(&self) -> RcDoc<()> {
         assert!(!self.unicode);
-        RcDoc::text("\"")
-            .append(RcDoc::text(self.string.clone()))
-            .append(RcDoc::text("\""))
+        text!("\"")
+            .append(text!(self.string.clone()))
+            .append(text!("\""))
     }
 }
 
@@ -768,8 +766,8 @@ pub struct NamedArgument {
     pub expr: Expression,
 }
 
-impl NamedArgument {
-    pub fn to_doc(&self) -> RcDoc<()> {
+impl Docable for NamedArgument {
+    fn to_doc(&self) -> RcDoc<()> {
         self.name
             .to_doc()
             .append(RcDoc::space())
@@ -870,30 +868,21 @@ impl<'a> Hash for &'a Expression {
 impl Docable for Expression {
     fn to_doc(&self) -> RcDoc<()> {
         match self {
-            Expression::PreIncrement(_, expr) => expr.to_doc().append(RcDoc::text("++")),
-            Expression::PostIncrement(_, expr) => expr.to_doc().append(RcDoc::text("--")),
-            Expression::New(_, expr) => RcDoc::text("new").append(expr.to_doc()),
+            Expression::PreIncrement(_, expr) => expr.to_doc().append(text!("++")),
+            Expression::PostIncrement(_, expr) => expr.to_doc().append(text!("--")),
+            Expression::New(_, expr) => text!("new").append(expr.to_doc()),
             Expression::ArraySubscript(_, expr, mexpr) => expr
                 .to_doc()
-                .append(RcDoc::text("["))
-                .append(
-                    mexpr
-                        .as_ref()
-                        .and_then(|x| Some(x.to_doc()))
-                        .unwrap_or(RcDoc::nil()),
-                )
-                .append(RcDoc::text("]")),
-            Expression::ArraySlice(..) => panic!("Array slice not supported"),
-            Expression::Parenthesis(_, expr) => RcDoc::text("(")
+                .append("[")
+                .append(option_box_to_doc(&mexpr))
+                .append("]"),
+            Expression::ArraySlice(..) => panic!("Array slice not supported: {:#?}", self),
+            Expression::Parenthesis(_, expr) => text!("(")
                 .append(expr.to_doc())
-                .append(RcDoc::text(")")),
+                .append(")"),
             Expression::FunctionCall(_, fun, args) => fun
                 .to_doc()
-                .append("(")
-                .append(RcDoc::intersperse(
-                    args.iter().map(|x| x.to_doc()),
-                    RcDoc::text(","),
-                ))
+		.append(paren_list_to_doc(args))
                 .append(")"),
             Expression::MemberAccess(_, contract, field) => {
                 contract.to_doc().append(".").append(field.to_doc())
@@ -1032,8 +1021,8 @@ pub struct Parameter {
     pub name: Option<Identifier>,
 }
 
-impl Parameter {
-    pub fn to_doc(&self) -> RcDoc<()> {
+impl Docable for Parameter {
+    fn to_doc(&self) -> RcDoc<()> {
         self.ty
             .to_doc()
             .append(
@@ -1088,6 +1077,12 @@ pub enum Visibility {
     Private(Option<Loc>),
 }
 
+impl Docable for Visibility {
+    fn to_doc(&self) -> RcDoc<()> {
+	RcDoc::text(self.to_string())
+    }
+}
+
 impl fmt::Display for Visibility {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -1131,7 +1126,6 @@ impl FunctionAttribute {
                 RcDoc::intersperse(ids.iter().map(|x| x.to_string()), RcDoc::text(", ")),
             ),
             FunctionAttribute::BaseOrModifier(_, base) => base.to_doc(),
-            _ => panic!("{:#?}", self),
         }
     }
 }
