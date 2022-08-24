@@ -293,7 +293,11 @@ pub type ParameterList = Vec<(Loc, Option<Parameter>)>;
 
 pub fn param_list_to_doc(ps: &ParameterList) -> RcDoc<()> {
     RcDoc::intersperse(
-        ps.iter().map(|x| x.1.as_ref().unwrap().to_doc()),
+        ps.iter().map(|x| {
+            x.1.as_ref()
+                .and_then(|x| Some(x.to_doc()))
+                .unwrap_or(RcDoc::nil())
+        }),
         RcDoc::text(",").append(Doc::space()),
     )
 }
@@ -323,12 +327,13 @@ impl Type {
         match self {
             Type::Address => RcDoc::text("address"),
             Type::AddressPayable => RcDoc::text("address payable"),
-            Type::Payable => panic!("Paypable not supported"),
+            Type::Payable => RcDoc::text("payable"),
             Type::Bool => RcDoc::text("bool"),
             Type::String => RcDoc::text("string"),
             Type::Int(size) => RcDoc::text("int").append(size.to_string()),
             Type::Uint(size) => RcDoc::text("uint").append(size.to_string()),
             Type::Bytes(size) => RcDoc::text("bytes").append(size.to_string()),
+            Type::DynamicBytes => RcDoc::text("bytes"),
             _ => panic!("{:#?}", self),
         }
     }
@@ -863,7 +868,12 @@ impl Expression {
             Expression::NumberLiteral(_, num, _) => RcDoc::text(num),
             Expression::Type(_, ty) => ty.to_doc(),
             Expression::Variable(id) => id.to_doc(),
-            _ => panic!(),
+            Expression::This(..) => RcDoc::text("this"),
+            Expression::List(_, ps) => RcDoc::text("(").append(param_list_to_doc(ps)).append(")"),
+            Expression::StringLiteral(lits) => {
+                RcDoc::intersperse(lits.iter().map(|x| x.to_doc()), RcDoc::text(", "))
+            }
+            _ => panic!("{:#?}", self),
         }
     }
 
@@ -964,12 +974,20 @@ pub struct Parameter {
 
 impl Parameter {
     pub fn to_doc(&self) -> RcDoc<()> {
-        assert!(self.name.is_some());
-        assert!(self.storage.is_none());
         self.ty
             .to_doc()
-            .append(RcDoc::space())
-            .append(self.name.as_ref().unwrap().to_doc())
+            .append(
+                self.storage
+                    .as_ref()
+                    .and_then(|x| Some(RcDoc::space().append(x.to_string())))
+                    .unwrap_or(RcDoc::nil()),
+            )
+            .append(
+                self.name
+                    .as_ref()
+                    .and_then(|x| Some(RcDoc::space().append(x.to_doc())))
+                    .unwrap_or(RcDoc::nil()),
+            )
     }
 }
 
@@ -1180,6 +1198,11 @@ impl Statement {
                 .append(body.to_doc()),
             Statement::Expression(_, expr) => expr.to_doc().append(RcDoc::text(";")),
             Statement::VariableDefinition(_, decl, None) => decl.to_doc().append(RcDoc::text(";")),
+            Statement::VariableDefinition(_, decl, Some(expr)) => decl
+                .to_doc()
+                .append(" = ")
+                .append(expr.to_doc())
+                .append(";"),
             Statement::Continue(..) => RcDoc::text("continue;"),
             Statement::Break(..) => RcDoc::text("break;"),
             Statement::Return(_, Some(expr)) => RcDoc::text("return")
@@ -1204,7 +1227,7 @@ impl Statement {
                 .append(expr.to_doc())
                 .append(RcDoc::text(";")),
             Statement::Try(..) => panic!("Try printing not supported"),
-            _ => panic!(),
+            _ => panic!("{:#?}", self),
         }
     }
 }
