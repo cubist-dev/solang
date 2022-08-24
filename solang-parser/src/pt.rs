@@ -42,10 +42,11 @@ pub fn list_to_doc<'a, T: 'a + Docable>(vec: &'a [T]) -> RcDoc<'a> {
 
 pub fn indent_list_to_doc<'a, T: 'a + Docable>(vec: &'a [T]) -> RcDoc<'a> {
     RcDoc::intersperse(
-        vec.iter().map(|x| x.to_doc()),
-        text!(",").append(RcDoc::hardline()),
+        vec.iter()
+            .map(|x| RcDoc::hardline().append(x.to_doc()).nest(4)),
+        text!(","),
     )
-    .nest(4)
+    .append(RcDoc::hardline())
 }
 
 pub fn spaced_list_to_doc<'a, T: 'a + Docable>(vec: &'a [T]) -> RcDoc<'a> {
@@ -337,10 +338,12 @@ impl Import {
 pub type ParameterList = Vec<(Loc, Option<Parameter>)>;
 
 pub fn param_list_to_doc(ps: &ParameterList) -> RcDoc<()> {
-    RcDoc::intersperse(
-        ps.iter().map(|x| option_to_doc(&x.1)),
-        RcDoc::text(",").append(Doc::space()),
-    )
+    text!("(")
+        .append(RcDoc::intersperse(
+            ps.iter().map(|x| option_to_doc(&x.1)),
+            RcDoc::text(",").append(Doc::space()),
+        ))
+        .append(")")
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -673,9 +676,7 @@ impl Docable for EnumDefinition {
             .append(self.name.to_doc())
             .append(RcDoc::space())
             .append("{")
-            .append(RcDoc::hardline())
             .append(indent_list_to_doc(&self.values))
-            .append(RcDoc::hardline())
             .append("}")
     }
 }
@@ -874,9 +875,7 @@ impl Docable for Expression {
                 .append("]"),
             Expression::ArraySlice(..) => panic!("Array slice not supported: {:#?}", self),
             Expression::Parenthesis(_, expr) => text!("(").append(expr.to_doc()).append(")"),
-            Expression::FunctionCall(_, fun, args) => {
-                fun.to_doc().append(paren_list_to_doc(args)).append(")")
-            }
+            Expression::FunctionCall(_, fun, args) => fun.to_doc().append(paren_list_to_doc(args)),
             Expression::MemberAccess(_, contract, field) => {
                 contract.to_doc().append(".").append(field.to_doc())
             }
@@ -906,7 +905,7 @@ impl Docable for Expression {
             Expression::Type(_, ty) => ty.to_doc(),
             Expression::Variable(id) => id.to_doc(),
             Expression::This(..) => text!("this"),
-            Expression::List(_, ps) => text!("(").append(param_list_to_doc(ps)).append(")"),
+            Expression::List(_, ps) => param_list_to_doc(ps),
             Expression::StringLiteral(lits) => list_to_doc(lits),
             Expression::FunctionCallBlock(_, base, expr) => {
                 base.to_doc().append("{").append(expr.to_doc()).append("}")
@@ -1016,7 +1015,9 @@ impl Docable for Parameter {
     fn to_doc(&self) -> RcDoc<()> {
         self.ty
             .to_doc()
+            .append(RcDoc::space())
             .append(option_to_doc(&self.storage))
+            .append(RcDoc::space())
             .append(option_to_doc(&self.name))
     }
 }
@@ -1109,9 +1110,7 @@ impl Docable for FunctionAttribute {
             FunctionAttribute::Immutable(..) => text!("immutable"),
             FunctionAttribute::Mutability(mutability) => mutability.to_doc(),
             FunctionAttribute::Visibility(visibility) => visibility.to_doc(),
-            FunctionAttribute::Override(_, ids) => text!("override ")
-                .append(RcDoc::space())
-                .append(list_to_doc(ids)),
+            FunctionAttribute::Override(_, ids) => text!("override ").append(list_to_doc(ids)),
             FunctionAttribute::BaseOrModifier(_, base) => base.to_doc(),
         }
     }
@@ -1168,14 +1167,12 @@ impl Docable for FunctionDefinition {
         let returns = tern!(
             self.returns.is_empty(),
             RcDoc::nil(),
-            text!(" returns ").append(param_list_to_doc(&self.returns))
+            text!("returns ").append(param_list_to_doc(&self.returns))
         );
-        name.append(Doc::space())
-            .append("(")
-            .append(param_list_to_doc(&self.params))
-            .append(")")
+        name.append(param_list_to_doc(&self.params))
             .append(RcDoc::space())
             .append(spaced_list_to_doc(&self.attributes))
+            .append(RcDoc::space())
             .append(returns)
             .append(self.body.as_ref().unwrap().to_doc())
     }
