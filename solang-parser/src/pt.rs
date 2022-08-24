@@ -556,6 +556,7 @@ impl EventDefinition {
                 self.fields.iter().map(|x| x.to_doc()),
                 RcDoc::text(",").append(RcDoc::space()),
             ))
+	    .append(")")
     }
 }
 
