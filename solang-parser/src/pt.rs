@@ -411,6 +411,7 @@ impl ContractPart {
             ContractPart::EventDefinition(ed) => ed.to_doc().append(";"),
             ContractPart::FunctionDefinition(fd) => fd.to_doc(),
             ContractPart::VariableDefinition(vd) => vd.to_doc().append(";"),
+	    ContractPart::EnumDefinition(ed) => ed.to_doc().append(";"),
             _ => panic!("Unsupported contract part: {:#?}", self),
         }
     }
