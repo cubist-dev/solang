@@ -204,9 +204,7 @@ impl SourceUnitPart {
                 .append(string.string.clone())
                 .append(";")
                 .append(RcDoc::hardline()),
-            SourceUnitPart::ImportDirective(import) => {
-		import.to_doc().append(";")
-            }
+            SourceUnitPart::ImportDirective(import) => import.to_doc().append(";"),
             SourceUnitPart::EventDefinition(ed) => ed.to_doc(),
             _ => panic!(),
         }
@@ -250,9 +248,33 @@ impl Import {
     pub fn to_doc(&self) -> RcDoc<()> {
         match self {
             Import::Plain(string, _) => RcDoc::text("import")
-		.append(RcDoc::space())
-		.append(string.to_doc()),
-            _ => panic!(),
+                .append(RcDoc::space())
+                .append(string.to_doc()),
+            Import::GlobalSymbol(string, id, _) => RcDoc::text("import")
+                .append(RcDoc::space())
+                .append(string.to_doc())
+                .append(RcDoc::space())
+                .append(" as ")
+                .append(id.to_doc()),
+            Import::Rename(string, imports, _) => RcDoc::text("import")
+                .append(" { ")
+                .append(RcDoc::intersperse(
+                    imports.iter().map(|import| {
+                        if import.1.is_some() {
+                            import
+                                .0
+                                .to_doc()
+                                .append(RcDoc::text(" as "))
+                                .append(import.1.as_ref().unwrap().to_doc())
+                        } else {
+                            import.0.to_doc()
+                        }
+                    }),
+                    RcDoc::text(", "),
+                ))
+                .append(" }")
+                .append(" from ")
+                .append(string.to_doc()),
         }
     }
 

@@ -15,7 +15,13 @@ fn print_test() {
 pragma solidity >=0.7.0 <0.9.0;
 
 import "./Foo.sol";
-
+import './Foo.sol';                                                                                                                                            
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "hardhat/console.sol";
+import "./util.sol" as util;                                                                                                                                                                  
+import "../token.sol" as token;
+import {symbol1 as alias, symbol2} from "filename";
+import * as globalSymbolName from "<filename>";
 contract AvaStorage {                                                                             
                                                                                                   
     EthStorage ethStorage;                                                                        
