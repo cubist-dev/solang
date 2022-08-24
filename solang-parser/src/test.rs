@@ -26,45 +26,48 @@ import * as globalSymbolName from "<filename>";
 error MyError__Error();
 
     enum State {
-        OPEN,                                                                                                                                                                         
+        OPEN,                                                                              
         CLOSED
     }
 
-contract AvaStorage {                                                                             
-                                                                                                  
-    EthStorage ethStorage;                                                                        
-    SolStorage solStorage;                                                                        
-    uint256 number;                                                                               
-                                                                                                  
-    constructor (uint256 num) {                                                                   
-      number = num;                                                                               
-    }                                                                                             
-                                                                                                  
-    function store(uint256 num) public {                                                          
-        number = num;                                                                             
-        ethStorage.store(number);                                                                 
-        solStorage.store(number);                                                                 
-    }                                                                                             
-                                                                                                  
-    function inc(uint256 num) public {                                                            
-        number += num;                                                                            
-        ethStorage.store(number);                                                                 
-        solStorage.store(number);                                                                 
-    }                                                                                             
-                                                                                                  
-    function dec(uint256 num) public {                                                            
-      if (number >= num) {                                                                        
-        number -= num;                                                                            
-      } else {                                                                                    
-        number = 0;                                                                               
-      }                                                                                           
-      ethStorage.store(number);                                                                   
-      solStorage.store(number);                                                                   
-    }                                                                                             
-                                                                                                  
-    function retrieve() public view returns (uint256){                                            
-      return number;                                                                              
-    }                                                                                             
+contract AvaStorage {
+                                                                        
+    EthStorage ethStorage;
+    SolStorage solStorage;
+    uint256 number;
+    uint16 private constant three = 3;
+    uint32 private immutable limit;
+    
+    constructor (uint256 num) {
+      number = num;                                              
+    }
+                                                                                   
+    function store(uint256 num) public {
+        number = num;
+        ethStorage.store(number);
+        solStorage.store(number);
+    }
+
+    function inc(uint256 num) public {
+        number += num;                                                            
+        ethStorage.store(number);
+        solStorage.store(number);
+    }                                                                 
+                                                                                              
+    function dec(uint256 num) public {
+      if (number >= num) {                                                            
+        number -= num;                                                                        
+      } else {                                                                            
+        number = 0;
+      }                                                                               
+      ethStorage.store(number);
+      solStorage.store(number);                                                               
+    }    
+                                                                                             
+    function retrieve() public view returns (uint256){
+      return number;                                            
+    }
+                                                                              
     }"#;
     let mut comments = Vec::new();
     let lex = Lexer::new(src, 0, &mut comments);

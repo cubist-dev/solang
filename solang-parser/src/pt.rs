@@ -411,7 +411,7 @@ impl ContractPart {
             ContractPart::EventDefinition(ed) => ed.to_doc().append(";"),
             ContractPart::FunctionDefinition(fd) => fd.to_doc(),
             ContractPart::VariableDefinition(vd) => vd.to_doc().append(";"),
-	    ContractPart::EnumDefinition(ed) => ed.to_doc().append(";"),
+            ContractPart::EnumDefinition(ed) => ed.to_doc().append(";"),
             _ => panic!("Unsupported contract part: {:#?}", self),
         }
     }
@@ -631,6 +631,17 @@ pub enum VariableAttribute {
     Override(Loc, Vec<IdentifierPath>),
 }
 
+impl VariableAttribute {
+    pub fn to_doc(&self) -> RcDoc<()> {
+        match self {
+            VariableAttribute::Visibility(vis) => RcDoc::text(vis.to_string()),
+            VariableAttribute::Constant(..) => RcDoc::text("constant"),
+            VariableAttribute::Immutable(..) => RcDoc::text("immutable"),
+            _ => panic!("Not supported: {:#?}", self),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct VariableDefinition {
     pub loc: Loc,
@@ -642,11 +653,30 @@ pub struct VariableDefinition {
 
 impl VariableDefinition {
     pub fn to_doc(&self) -> RcDoc<()> {
-        assert!(self.attrs.is_empty());
+        let init = self
+            .initializer
+            .as_ref()
+            .and_then(|x| Some(x.to_doc()))
+            .unwrap_or(RcDoc::nil());
+        let attrs = if self.attrs.is_empty() {
+            RcDoc::nil()
+        } else {
+            RcDoc::space().append(RcDoc::intersperse(
+                self.attrs.iter().map(|x| x.to_doc()),
+                RcDoc::space(),
+            ))
+        };
         self.ty
             .to_doc()
+            .append(attrs)
             .append(RcDoc::space())
             .append(self.name.to_doc())
+            .append(if self.initializer.is_some() {
+                RcDoc::text(" = ")
+            } else {
+                RcDoc::nil()
+            })
+            .append(init)
     }
 }
 
