@@ -22,6 +22,9 @@ import "./util.sol" as util;
 import "../token.sol" as token;
 import {symbol1 as alias, symbol2} from "filename";
 import * as globalSymbolName from "<filename>";
+
+error MyError__Error();
+
 contract AvaStorage {                                                                             
                                                                                                   
     EthStorage ethStorage;                                                                        

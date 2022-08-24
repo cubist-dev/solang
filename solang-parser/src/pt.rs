@@ -205,7 +205,8 @@ impl SourceUnitPart {
                 .append(";")
                 .append(RcDoc::hardline()),
             SourceUnitPart::ImportDirective(import) => import.to_doc().append(";"),
-            SourceUnitPart::EventDefinition(ed) => ed.to_doc(),
+            SourceUnitPart::EventDefinition(ed) => ed.to_doc().append(";"),
+            SourceUnitPart::ErrorDefinition(ed) => ed.to_doc().append(";"),
             _ => panic!(),
         }
     }
@@ -406,7 +407,7 @@ pub enum ContractPart {
 impl ContractPart {
     pub fn to_doc(&self) -> RcDoc<()> {
         match self {
-            ContractPart::EventDefinition(ed) => ed.to_doc(),
+            ContractPart::EventDefinition(ed) => ed.to_doc().append(";"),
             ContractPart::FunctionDefinition(fd) => fd.to_doc(),
             ContractPart::VariableDefinition(vd) => vd.to_doc().append(";"),
             _ => panic!("Unsupported contract part: {:#?}", self),
@@ -555,7 +556,6 @@ impl EventDefinition {
                 self.fields.iter().map(|x| x.to_doc()),
                 RcDoc::text(",").append(RcDoc::space()),
             ))
-            .append(RcDoc::text(");"))
     }
 }
 
@@ -566,11 +566,33 @@ pub struct ErrorParameter {
     pub name: Option<Identifier>,
 }
 
+impl ErrorParameter {
+    pub fn to_doc(&self) -> RcDoc<()> {
+        self.ty
+            .to_doc()
+            .append(RcDoc::space())
+            .append(self.name.as_ref().unwrap().to_doc())
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct ErrorDefinition {
     pub loc: Loc,
     pub name: Identifier,
     pub fields: Vec<ErrorParameter>,
+}
+
+impl ErrorDefinition {
+    pub fn to_doc(&self) -> RcDoc<()> {
+        RcDoc::text("error")
+            .append(RcDoc::space())
+            .append(self.name.to_doc())
+            .append(RcDoc::space())
+            .append(RcDoc::intersperse(
+                self.fields.iter().map(|x| x.to_doc()),
+                RcDoc::text(",").append(RcDoc::space()),
+            ))
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
