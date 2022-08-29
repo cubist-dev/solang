@@ -264,7 +264,7 @@ impl Docable for SourceUnitPart {
             SourceUnitPart::ImportDirective(import) => import.to_doc().append(";"),
             SourceUnitPart::EventDefinition(ed) => ed.to_doc().append(";"),
             SourceUnitPart::ErrorDefinition(ed) => ed.to_doc().append(";"),
-            SourceUnitPart::EnumDefinition(ed) => ed.to_doc().append(";"),
+            SourceUnitPart::EnumDefinition(ed) => ed.to_doc(),
             _ => panic!("Unsupported source unit part: {:#?}", self),
         }
     }
@@ -1250,7 +1250,7 @@ impl Docable for Statement {
             Statement::If(_, cond, tb, fb) => {
                 let fdoc = tern!(
                     fb.is_some(),
-                    text!("else ").append(option_box_to_doc(fb)),
+                    text!(" else ").append(option_box_to_doc(fb)),
                     RcDoc::nil()
                 );
                 text!("if (")
