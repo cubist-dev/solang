@@ -873,7 +873,7 @@ impl Docable for Expression {
         match self {
             Expression::PreIncrement(_, expr) => expr.to_doc().append("++"),
             Expression::PostIncrement(_, expr) => expr.to_doc().append("--"),
-            Expression::New(_, expr) => text!("new").append(expr.to_doc()),
+            Expression::New(_, expr) => text!("new ").append(expr.to_doc()),
             Expression::ArraySubscript(_, expr, mexpr) => expr
                 .to_doc()
                 .append("[")
