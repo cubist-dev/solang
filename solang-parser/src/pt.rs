@@ -773,7 +773,7 @@ impl Docable for NamedArgument {
     fn to_doc(&self) -> RcDoc<()> {
         self.name
             .to_doc()
-            .append(RcDoc::space())
+            .append(text!(": "))
             .append(self.expr.to_doc())
     }
 }
