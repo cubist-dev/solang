@@ -9,6 +9,8 @@ pub mod codegen;
 pub mod diagnostics;
 pub mod doccomment;
 mod lexer;
+#[cfg(test)]
+mod pretty_test;
 pub mod pt;
 #[cfg(test)]
 mod test;
