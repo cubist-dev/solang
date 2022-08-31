@@ -384,6 +384,11 @@ impl Docable for Type {
             Type::Uint(size) => text!("uint").append(size.to_string()),
             Type::Bytes(size) => text!("bytes").append(size.to_string()),
             Type::DynamicBytes => text!("bytes"),
+            Type::Mapping(_, from_expr, to_expr) => text!("mapping(")
+                .append(from_expr.to_doc())
+                .append(text!(" => "))
+                .append(to_expr.to_doc())
+                .append(text!(")")),
             _ => panic!("{:#?}", self),
         }
     }
