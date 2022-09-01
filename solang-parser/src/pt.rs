@@ -53,6 +53,10 @@ pub fn spaced_list_to_doc<'a, T: 'a + Docable>(vec: &'a [T]) -> RcDoc<'a> {
     RcDoc::intersperse(vec.iter().map(|x| x.to_doc()), RcDoc::space())
 }
 
+fn space_if<'a>(cond: bool) -> RcDoc<'a> {
+    tern!(cond, RcDoc::space(), RcDoc::nil())
+}
+
 pub fn option_to_doc<'a, T: 'a + Docable>(opt: &'a Option<T>) -> RcDoc<'a> {
     opt.as_ref().map(|x| x.to_doc()).unwrap_or_else(RcDoc::nil)
 }
@@ -588,7 +592,7 @@ impl Docable for ContractDefinition {
             .append(RcDoc::space())
             .append(tern!(self.base.is_empty(), RcDoc::nil(), text!(" is ")))
             .append(list_to_doc(&self.base))
-            .append(tern!(self.base.is_empty(), RcDoc::nil(), RcDoc::space()))
+            .append(space_if(!self.base.is_empty()))
             .append(RcDoc::text("{"))
             .append(RcDoc::intersperse(
                 self.parts
@@ -1045,8 +1049,9 @@ impl Docable for Parameter {
     fn to_doc(&self) -> RcDoc<()> {
         self.ty
             .to_doc()
-            .append(RcDoc::space())
-            .append(option_space_to_doc(&self.storage))
+            .append(space_if(self.storage.is_some()))
+            .append(option_to_doc(&self.storage))
+            .append(space_if(self.name.is_some()))
             .append(option_to_doc(&self.name))
     }
 }
