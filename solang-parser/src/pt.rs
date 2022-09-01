@@ -71,7 +71,7 @@ pub fn paren_list_to_doc<'a, T: 'a + Docable>(vec: &'a [T]) -> RcDoc<'a> {
     RcDoc::text("(").append(list_to_doc(vec)).append(")")
 }
 
-#[derive(Debug, PartialEq, PartialOrd, Ord, Eq, Hash, Clone, Copy)]
+#[derive(Debug, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
 /// file no, start offset, end offset (in bytes)
 pub enum Loc {
     Builtin,
@@ -79,6 +79,12 @@ pub enum Loc {
     Implicit,
     Codegen,
     File(usize, usize, usize),
+}
+
+impl PartialEq for Loc {
+    fn eq(&self, _: &Self) -> bool {
+        true
+    }
 }
 
 /// Structs can implement this trait to easily return their loc
@@ -156,16 +162,10 @@ impl Loc {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Identifier {
     pub loc: Loc,
     pub name: String,
-}
-
-impl PartialEq for Identifier {
-    fn eq(&self, other: &Self) -> bool {
-        self.name == other.name
-    }
 }
 
 impl Docable for Identifier {
@@ -180,16 +180,10 @@ impl Display for Identifier {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct IdentifierPath {
     pub loc: Loc,
     pub identifiers: Vec<Identifier>,
-}
-
-impl PartialEq for IdentifierPath {
-    fn eq(&self, other: &Self) -> bool {
-        self.identifiers == other.identifiers
-    }
 }
 
 impl Docable for IdentifierPath {
@@ -213,7 +207,7 @@ impl Display for IdentifierPath {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Comment {
     Line(Loc, String),
     Block(Loc, String),
@@ -307,29 +301,11 @@ impl SourceUnitPart {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Import {
     Plain(StringLiteral, Loc),
     GlobalSymbol(StringLiteral, Identifier, Loc),
     Rename(StringLiteral, Vec<(Identifier, Option<Identifier>)>, Loc),
-}
-
-impl PartialEq for Import {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Import::Plain(lit_one, ..), Import::Plain(lit_two, ..)) if lit_one == lit_two => true,
-            (
-                Import::GlobalSymbol(lit_one, id_one, _),
-                Import::GlobalSymbol(lit_two, id_two, _),
-            ) if lit_one == lit_two && id_one == id_two => true,
-            (Import::Rename(lit_one, ids_1, _), Import::Rename(lit_two, ids_2, _))
-                if lit_one == lit_two && ids_1 == ids_2 =>
-            {
-                true
-            }
-            _ => false,
-        }
-    }
 }
 
 impl Docable for Import {
@@ -388,7 +364,7 @@ pub fn param_list_to_doc(ps: &ParameterList) -> RcDoc<()> {
         .append(")")
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Type {
     Address,
     AddressPayable,
@@ -406,25 +382,6 @@ pub enum Type {
         attributes: Vec<FunctionAttribute>,
         returns: Option<(ParameterList, Vec<FunctionAttribute>)>,
     },
-}
-
-impl PartialEq for Type {
-    fn eq(&self, other: &Self) -> bool {
-	match (self, other) {
-	    (Type::Address, Type::Address) => true,
-	    (Type::AddressPayable, Type::AddressPayable) => true,
-	    (Type::Payable, Type::Payable) => true,
-	    (Type::String, Type::String) => true,
-	    (Type::Int(v_1), Type::Int(v_2)) => v_1 == v_2,
-	    (Type::Uint(v_1), Type::Uint(v_2)) => v_1 == v_2,
-	    (Type::Bytes(v_1), Type::Bytes(v_2)) => v_1 == v_2,
-	    (Type::Rational, Type::Rational) => true, 
-	    (Type::DynamicBytes, Type::DynamicBytes) => true,
-	    (Type::Mapping(_, expr_1, expr_2), Type::Mapping(_, expr_3, expr_4)) => expr_1 == expr_3 && expr_2 == expr_4,
-	    (Type::Function { .. }, Type::Function { .. }) => panic!("Unsupported function ty"),
-	    _ => false
-	}
-    }
 }
 
 impl Docable for Type {
@@ -449,22 +406,11 @@ impl Docable for Type {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum StorageLocation {
     Memory(Loc),
     Storage(Loc),
     Calldata(Loc),
-}
-
-impl PartialEq for StorageLocation {
-    fn eq(&self, other: &Self) -> bool {
-	match (self, other) {
-	    (StorageLocation::Memory(..), StorageLocation::Memory(..)) => true,
-	    (StorageLocation::Storage(..), StorageLocation::Storage(..)) => true,
-	    (StorageLocation::Calldata(..), StorageLocation::Calldata(..)) => true,
-	    _ => false
-	}
-    }
 }
 
 impl Docable for StorageLocation {
@@ -493,20 +439,12 @@ impl fmt::Display for StorageLocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct VariableDeclaration {
     pub loc: Loc,
     pub ty: Expression,
     pub storage: Option<StorageLocation>,
     pub name: Identifier,
-}
-
-impl PartialEq for VariableDeclaration {
-    fn eq(&self, other: &Self) -> bool {
-	self.ty == other.ty &&
-	    self.storage == other.storage &&
-	    self.name == other.name 
-    }
 }
 
 impl Docable for VariableDeclaration {
@@ -519,18 +457,12 @@ impl Docable for VariableDeclaration {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 #[allow(clippy::vec_box)]
 pub struct StructDefinition {
     pub loc: Loc,
     pub name: Identifier,
     pub fields: Vec<VariableDeclaration>,
-}
-
-impl PartialEq for StructDefinition {
-    fn eq(&self, other: &Self) -> bool {
-	self.name == other.name && self.fields == other.fields
-    }
 }
 
 impl<'a> Hash for &'a StructDefinition {
@@ -558,7 +490,8 @@ impl Docable for ContractPart {
             ContractPart::EventDefinition(ed) => ed.to_doc().append(";"),
             ContractPart::FunctionDefinition(fd) => fd.to_doc(),
             ContractPart::VariableDefinition(vd) => vd.to_doc().append(";"),
-            ContractPart::EnumDefinition(ed) => ed.to_doc().append(";"),
+            ContractPart::EnumDefinition(ed) => ed.to_doc(),
+            ContractPart::StraySemicolon(..) => text!(";"),
             _ => panic!("Unsupported contract part: {:#?}", self),
         }
     }
@@ -587,18 +520,12 @@ pub enum UsingList {
     Functions(Vec<IdentifierPath>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Using {
     pub loc: Loc,
     pub list: UsingList,
     pub ty: Option<Expression>,
     pub global: Option<Identifier>,
-}
-
-impl PartialEq for Using {
-    fn eq(&self, other: &Self) -> bool {
-	self.name == other.name && self.fields == other.fields
-    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -659,6 +586,9 @@ impl Docable for ContractDefinition {
             .append(RcDoc::space())
             .append(self.name.to_doc())
             .append(RcDoc::space())
+            .append(tern!(self.base.is_empty(), RcDoc::nil(), text!(" is ")))
+            .append(list_to_doc(&self.base))
+            .append(tern!(self.base.is_empty(), RcDoc::nil(), RcDoc::space()))
             .append(RcDoc::text("{"))
             .append(RcDoc::intersperse(
                 self.parts
@@ -1115,8 +1045,9 @@ impl Docable for Parameter {
     fn to_doc(&self) -> RcDoc<()> {
         self.ty
             .to_doc()
+            .append(RcDoc::space())
             .append(option_space_to_doc(&self.storage))
-            .append(option_space_to_doc(&self.name))
+            .append(option_to_doc(&self.name))
     }
 }
 

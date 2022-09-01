@@ -1,7 +1,89 @@
 use crate::lexer::Lexer;
 use crate::pt::*;
 use crate::solidity;
-//use pretty_assertions::assert_eq;
+use pretty_assertions::assert_eq;
+
+#[cfg(test)]
+fn pretty_test(src: &str) {
+    let mut comments = Vec::new();
+    let lex = Lexer::new(src, 0, &mut comments);
+    let pt = solidity::SourceUnitParser::new()
+        .parse(src, 0, lex)
+        .unwrap();
+    let src_pretty = pt.to_string();
+    let lex_pretty = Lexer::new(&src_pretty, 0, &mut comments);
+    let pt_pretty = solidity::SourceUnitParser::new()
+        .parse(src, 0, lex_pretty)
+        .unwrap();
+    assert_eq!(pt_pretty, pt);
+}
+
+#[test]
+fn list() {
+    let src = r#"
+contract Contract {
+
+    function fulfillRandomWords() internal override {
+        (bool success, ) = recentWinner.call{value: address(this).balance}("");
+    }
+}"#;
+    pretty_test(src);
+}
+
+#[test]
+fn errors() {
+    let src = r#"
+// SPDX-License-Identifier: MIT
+// Thanks to: 
+// https://raw.githubusercontent.com/smartcontractkit/smart-contract-examples/main/lottery/contracts/CharityRaffle.sol
+
+pragma solidity ^0.8.7;
+
+import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
+import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/KeeperCompatibleInterface.sol";
+
+error CharityRaffle__NotJackpotValue();
+error CharityRaffle__FundingContractFailed();
+error CharityRaffle__UpkeepNotNeeded(
+    uint256 currentBalance,
+    uint256 numPlayers,
+    uint256 raffleState
+);
+error CharityRaffle__CharityTransferFailed(address charity);
+error CharityRaffle__SendMoreToEnterRaffle();
+error CharityRaffle__RaffleNotOpen();
+error CharityRaffle__NotValidCharityChoice();
+error CharityRaffle__JackpotTransferFailed();
+error CharityRaffle__MustBeFunder();
+error CharityRaffle__NoCharityWinner();
+error CharityRaffle__RaffleNotClosed();
+error CharityRaffle__MatchAlreadyFunded();
+error CharityRaffle__IncorrectMatchValue();
+error CharityRaffle__FundingToMatchTransferFailed();
+error CharityRaffle__ContractNotFunded();
+error CharityRaffle__DonationMatchFailed();
+
+/**@title A sample Charity Raffle Contract originally @author Patrick Collins
+ * @notice This contract creates a lottery in which players enter by donating to 1 of 3 charities
+ * @dev This implements the Chainlink VRF Version 2
+ */
+"#;
+    pretty_test(src);
+}
+
+#[test]
+fn contract_base() {
+    let src = r#"
+// SPDX-License-Identifier: MIT
+// Thanks to: 
+// https://raw.githubusercontent.com/smartcontractkit/smart-contract-examples/main/lottery/contracts/CharityRaffle.sol
+
+contract CharityRaffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
+
+}"#;
+    pretty_test(src);
+}
 
 #[test]
 fn charity_raffle() {
@@ -512,15 +594,5 @@ contract Contract {
         (bool success, ) = recentWinner.call{value: address(this).balance}("");
     }
 }"#;
-    let mut comments = Vec::new();
-    let lex = Lexer::new(src, 0, &mut comments);
-    let pt = solidity::SourceUnitParser::new()
-        .parse(src, 0, lex)
-        .unwrap();
-    let src_pretty = pt.to_string();
-    let lex_pretty = Lexer::new(&src_pretty, 0, &mut comments);
-    let pt_pretty = solidity::SourceUnitParser::new()
-        .parse(src, 0, lex_pretty)
-        .unwrap();
-    assert_eq!(pt_pretty, pt);
+    pretty_test(src);
 }
