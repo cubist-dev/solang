@@ -1,7 +1,7 @@
 use crate::lexer::Lexer;
 use crate::pt::*;
 use crate::solidity;
-use pretty_assertions::assert_eq;
+//use pretty_assertions::assert_eq;
 
 #[test]
 fn charity_raffle() {
@@ -519,9 +519,8 @@ contract Contract {
         .unwrap();
     let src_pretty = pt.to_string();
     let lex_pretty = Lexer::new(&src_pretty, 0, &mut comments);
-    assert!(solidity::SourceUnitParser::new()
+    let pt_pretty = solidity::SourceUnitParser::new()
         .parse(src, 0, lex_pretty)
-        .is_ok())
-    // println!("{:#?}", pt);
-    // println!("{}", pt);
+        .unwrap();
+    assert_eq!(pt_pretty, pt);
 }
