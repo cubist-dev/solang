@@ -21,6 +21,7 @@ fn pretty_test(src: &str) {
 fn r#override() {
     let src = r#"
 // SPDX-License-Identifier: MIT
+// Thanks to: https://raw.githubusercontent.com/smartcontractkit/smart-contract-examples/main/dynamic-nft/2_complete.sol
 contract dynNFT is ERC721, ERC721URIStorage, Ownable {
     function tokenURI(uint256 tokenId)
         public
@@ -40,6 +41,7 @@ contract dynNFT is ERC721, ERC721URIStorage, Ownable {
 fn constructor() {
     let src = r#"
 // SPDX-License-Identifier: MIT
+// Thanks to: https://raw.githubusercontent.com/smartcontractkit/smart-contract-examples/main/dynamic-nft/2_complete.sol
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts@4.6.0/token/ERC721/ERC721.sol";
@@ -73,6 +75,8 @@ contract dynNFT is ERC721, ERC721URIStorage, Ownable {
 #[test]
 fn using() {
     let src = r#"
+// SPDX-License-Identifier: MIT
+// Thanks to: https://raw.githubusercontent.com/smartcontractkit/smart-contract-examples/main/dynamic-nft/2_complete.sol
 import "@openzeppelin/contracts@4.6.0/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts@4.6.0/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts@4.6.0/access/Ownable.sol";                                                                                                           
@@ -95,6 +99,8 @@ contract dynNFT is ERC721, ERC721URIStorage, Ownable {
 #[test]
 fn list() {
     let src = r#"
+// SPDX-License-Identifier: MIT
+// https://raw.githubusercontent.com/smartcontractkit/smart-contract-examples/main/lottery/contracts/Raffle.sol
 contract Contract {
 
     function fulfillRandomWords() internal override {
