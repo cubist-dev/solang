@@ -1166,7 +1166,10 @@ impl Docable for FunctionAttribute {
             FunctionAttribute::Immutable(..) => text!("immutable"),
             FunctionAttribute::Mutability(mutability) => mutability.to_doc(),
             FunctionAttribute::Visibility(visibility) => visibility.to_doc(),
-            FunctionAttribute::Override(_, ids) => text!("override ").append(list_to_doc(ids)),
+            FunctionAttribute::Override(_, ids) => text!("override ")
+                .append(tern!(!ids.is_empty(), text!("("), RcDoc::nil()))
+                .append(list_to_doc(ids))
+                .append(tern!(!ids.is_empty(), text!(")"), RcDoc::nil())),
             FunctionAttribute::BaseOrModifier(_, base) => base.to_doc(),
         }
     }

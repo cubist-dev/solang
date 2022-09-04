@@ -18,6 +18,59 @@ fn pretty_test(src: &str) {
 }
 
 #[test]
+fn r#override() {
+    let src = r#"
+// SPDX-License-Identifier: MIT
+contract dynNFT is ERC721, ERC721URIStorage, Ownable {
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        override(ERC721, ERC721URIStorage)
+        returns (string memory)
+    {
+        return super.tokenURI(tokenId);
+    }
+}
+
+"#;
+    pretty_test(src);
+}
+
+#[test]
+fn constructor() {
+    let src = r#"
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.4;
+
+import "@openzeppelin/contracts@4.6.0/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts@4.6.0/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts@4.6.0/access/Ownable.sol";
+import "@openzeppelin/contracts@4.6.0/utils/Counters.sol";
+
+contract dynNFT is ERC721, ERC721URIStorage, Ownable {
+    using Counters for Counters.Counter;
+
+    Counters.Counter private _tokenIdCounter;
+
+    // Metadata information for each stage of the NFT on IPFS.
+    string[] IpfsUri = [
+        "https://ipfs.io/ipfs/QmYaTsyxTDnrG4toc8721w62rL4ZBKXQTGj9c9Rpdrntou/seed.json",
+        "https://ipfs.io/ipfs/QmYaTsyxTDnrG4toc8721w62rL4ZBKXQTGj9c9Rpdrntou/purple-sprout.json",
+        "https://ipfs.io/ipfs/QmYaTsyxTDnrG4toc8721w62rL4ZBKXQTGj9c9Rpdrntou/purple-blooms.json"
+    ];
+
+    uint256 lastTimeStamp;
+    uint256 interval;
+
+    constructor(uint256 _interval) ERC721("dNFTs", "dNFT") {
+        interval = _interval;
+        lastTimeStamp = block.timestamp;
+    }
+}"#;
+    pretty_test(src);
+}
+
+#[test]
 fn using() {
     let src = r#"
 import "@openzeppelin/contracts@4.6.0/token/ERC721/ERC721.sol";
