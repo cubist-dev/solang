@@ -1,5 +1,4 @@
 use crate::lexer::Lexer;
-use crate::pt::*;
 use crate::solidity;
 use pretty_assertions::assert_eq;
 
@@ -16,6 +15,28 @@ fn pretty_test(src: &str) {
         .parse(src, 0, lex_pretty)
         .unwrap();
     assert_eq!(pt_pretty, pt);
+}
+
+#[test]
+fn using() {
+    let src = r#"
+import "@openzeppelin/contracts@4.6.0/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts@4.6.0/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts@4.6.0/access/Ownable.sol";                                                                                                           
+import "@openzeppelin/contracts@4.6.0/utils/Counters.sol";
+
+contract dynNFT is ERC721, ERC721URIStorage, Ownable {
+    using Counters for Counters.Counter;                                                                                                                                                      
+    Counters.Counter private _tokenIdCounter;
+    // Metadata information for each stage of the NFT on IPFS.
+    string[] IpfsUri = [                                                                                                                                 
+        "https://ipfs.io/ipfs/QmYaTsyxTDnrG4toc8721w62rL4ZBKXQTGj9c9Rpdrntou/seed.json",
+        "https://ipfs.io/ipfs/QmYaTsyxTDnrG4toc8721w62rL4ZBKXQTGj9c9Rpdrntou/purple-sprout.json",
+        "https://ipfs.io/ipfs/QmYaTsyxTDnrG4toc8721w62rL4ZBKXQTGj9c9Rpdrntou/purple-blooms.json"                                                                                              
+    ];
+}
+"#;
+    pretty_test(src);
 }
 
 #[test]

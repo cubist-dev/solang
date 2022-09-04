@@ -496,6 +496,7 @@ impl Docable for ContractPart {
             ContractPart::VariableDefinition(vd) => vd.to_doc().append(";"),
             ContractPart::EnumDefinition(ed) => ed.to_doc(),
             ContractPart::StraySemicolon(..) => text!(";"),
+            ContractPart::Using(using) => using.to_doc().append(";"),
             _ => panic!("Unsupported contract part: {:#?}", self),
         }
     }
@@ -524,12 +525,32 @@ pub enum UsingList {
     Functions(Vec<IdentifierPath>),
 }
 
+impl Docable for UsingList {
+    fn to_doc(&self) -> RcDoc<()> {
+        match self {
+            UsingList::Library(ip) => ip.to_doc(),
+            UsingList::Functions(ips) => text!("{").append(list_to_doc(ips)).append("}"),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct Using {
     pub loc: Loc,
     pub list: UsingList,
     pub ty: Option<Expression>,
     pub global: Option<Identifier>,
+}
+
+impl Docable for Using {
+    fn to_doc(&self) -> RcDoc<()> {
+        assert!(self.global.is_none());
+        assert!(self.ty.is_some());
+        text!("using ")
+            .append(self.list.to_doc())
+            .append(" for ")
+            .append(option_to_doc(&self.ty))
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -935,6 +956,7 @@ impl Docable for Expression {
             Expression::And(_, left, right) => left.bin_op_doc("&&", right),
             Expression::Or(_, left, right) => left.bin_op_doc("||", right),
             Expression::NumberLiteral(_, num, _) => text!(num),
+            Expression::ArrayLiteral(_, elems) => text!("[").append(list_to_doc(elems)).append("]"),
             Expression::Type(_, ty) => ty.to_doc(),
             Expression::Variable(id) => id.to_doc(),
             Expression::This(..) => text!("this"),
