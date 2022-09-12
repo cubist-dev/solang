@@ -469,6 +469,22 @@ pub struct StructDefinition {
     pub fields: Vec<VariableDeclaration>,
 }
 
+impl Docable for StructDefinition {
+    fn to_doc(&self) -> RcDoc<()> {
+        text!("struct ")
+            .append(self.name.to_doc())
+            .append(" {")
+            .append(RcDoc::intersperse(
+                self.fields
+                    .iter()
+                    .map(|field| RcDoc::hardline().append(field.to_doc().append(";")).nest(4)),
+                RcDoc::nil(),
+            ))
+            .append(RcDoc::hardline())
+            .append("}")
+    }
+}
+
 impl<'a> Hash for &'a StructDefinition {
     fn hash<H: Hasher>(&self, state: &mut H) {
         std::ptr::hash(*self, state)
@@ -495,6 +511,7 @@ impl Docable for ContractPart {
             ContractPart::FunctionDefinition(fd) => fd.to_doc(),
             ContractPart::VariableDefinition(vd) => vd.to_doc().append(";"),
             ContractPart::EnumDefinition(ed) => ed.to_doc(),
+            ContractPart::StructDefinition(sd) => sd.to_doc(),
             ContractPart::StraySemicolon(..) => text!(";"),
             ContractPart::Using(using) => using.to_doc().append(";"),
             _ => panic!("Unsupported contract part: {:#?}", self),

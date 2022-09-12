@@ -18,6 +18,26 @@ fn pretty_test(src: &str) {
 }
 
 #[test]
+fn r#struct() {
+    let src = r#"
+contract Used {
+    struct Book {
+        string name;
+        string author;
+        uint256 numPages;
+    }
+
+    Book[] myBooks;
+
+    function addBook(Book memory book) public {
+        myBooks.push(book);
+    }
+}
+"#;
+    pretty_test(src);
+}
+
+#[test]
 fn r#override() {
     let src = r#"
 // SPDX-License-Identifier: MIT
