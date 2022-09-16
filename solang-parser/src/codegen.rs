@@ -52,7 +52,9 @@ pub fn function_def(
         name: Some(id(name)),
         name_loc: pt::Loc::Codegen,
         params: params,
-        attributes: Vec::new(),
+        attributes: vec![pt::FunctionAttribute::Visibility(pt::Visibility::Public(
+            None,
+        ))],
         return_not_returns: None,
         returns: annon_parameter_list(ret.map_or_else(Vec::new, |r| vec![r])),
         body: Some(body),
