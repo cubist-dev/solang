@@ -31,13 +31,13 @@ pub fn block_stmt(stmts: Vec<pt::Statement>) -> pt::Statement {
     }
 }
 
-pub fn event_def(name: String, params: Vec<pt::EventParameter>) -> pt::ContractPart {
-    pt::ContractPart::EventDefinition(Box::new(pt::EventDefinition {
+pub fn event_def(name: String, params: Vec<pt::EventParameter>) -> pt::EventDefinition {
+    pt::EventDefinition {
         loc: pt::Loc::Codegen,
         name: id(name),
         fields: params,
         anonymous: false,
-    }))
+    }
 }
 
 pub fn function_def(
@@ -45,8 +45,8 @@ pub fn function_def(
     params: pt::ParameterList,
     ret: Option<pt::Type>,
     body: pt::Statement,
-) -> pt::ContractPart {
-    pt::ContractPart::FunctionDefinition(Box::new(pt::FunctionDefinition {
+) -> pt::FunctionDefinition {
+    pt::FunctionDefinition {
         loc: pt::Loc::Codegen,
         ty: pt::FunctionTy::Function,
         name: Some(id(name)),
@@ -56,7 +56,7 @@ pub fn function_def(
         return_not_returns: None,
         returns: annon_parameter_list(ret.map_or_else(Vec::new, |r| vec![r])),
         body: Some(body),
-    }))
+    }
 }
 
 pub fn annon_parameter(ty: pt::Type) -> pt::Parameter {
