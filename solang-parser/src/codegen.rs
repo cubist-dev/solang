@@ -31,21 +31,18 @@ pub fn block_stmt(stmts: Vec<pt::Statement>) -> pt::Statement {
     }
 }
 
-pub fn event_def(name: String, params: Vec<(String, pt::Type)>) -> pt::ContractPart {
+pub fn event_def(name: String, params: Vec<pt::EventParameter>) -> pt::ContractPart {
     pt::ContractPart::EventDefinition(Box::new(pt::EventDefinition {
         loc: pt::Loc::Codegen,
         name: id(name),
-        fields: params
-            .into_iter()
-            .map(|x| event_parameter(x.0, x.1))
-            .collect(),
+        fields: params,
         anonymous: false,
     }))
 }
 
 pub fn function_def(
     name: String,
-    params: Vec<(String, pt::Type)>,
+    params: pt::ParameterList,
     ret: Option<pt::Type>,
     body: pt::Statement,
 ) -> pt::ContractPart {
@@ -54,10 +51,10 @@ pub fn function_def(
         ty: pt::FunctionTy::Function,
         name: Some(id(name)),
         name_loc: pt::Loc::Codegen,
-        params: parameter_list(params),
+        params: params,
         attributes: Vec::new(),
         return_not_returns: None,
-        returns: annon_parameter_list(ret.map_or_else(|| Vec::new(), |r| vec![r])),
+        returns: annon_parameter_list(ret.map_or_else(Vec::new, |r| vec![r])),
         body: Some(body),
     }))
 }
@@ -101,4 +98,45 @@ pub fn parameter_list(params: Vec<(String, pt::Type)>) -> pt::ParameterList {
         .into_iter()
         .map(|p| (pt::Loc::Codegen, Some(parameter(p.0, p.1))))
         .collect()
+}
+
+// Parameter conversion
+
+/// Take a list of parameters and convert it to a list of event parameters
+pub fn params_to_event_params(params: &pt::ParameterList) -> Vec<pt::EventParameter> {
+    params
+        .iter()
+        .map(|p| {
+            assert!(p.1.is_some());
+            param_to_event_param(p.1.as_ref().unwrap())
+        })
+        .collect()
+}
+
+/// Take a parameter and convert it to an event parameter
+pub fn param_to_event_param(param: &pt::Parameter) -> pt::EventParameter {
+    pt::EventParameter {
+        ty: param.ty.clone(),
+        loc: pt::Loc::Codegen,
+        indexed: false,
+        name: param.name.clone(),
+    }
+}
+
+/// Take a list of parameters and convert them to expressions that can be
+/// used as a list of arguments
+pub fn params_to_args(params: &pt::ParameterList) -> Vec<pt::Expression> {
+    params
+        .iter()
+        .map(|p| {
+            assert!(p.1.is_some());
+            param_to_arg(p.1.as_ref().unwrap())
+        })
+        .collect()
+}
+
+/// Take a parameter and convert it to an expression that can be used as an argument
+pub fn param_to_arg(param: &pt::Parameter) -> pt::Expression {
+    assert!(param.name.is_some());
+    var_expr(param.name.as_ref().unwrap().name.clone())
 }
