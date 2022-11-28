@@ -514,6 +514,7 @@ impl Docable for ContractPart {
             ContractPart::StructDefinition(sd) => sd.to_doc(),
             ContractPart::StraySemicolon(..) => text!(";"),
             ContractPart::Using(using) => using.to_doc().append(";"),
+	    ContractPart::ErrorDefinition(ed) => ed.to_doc().append(";"),
             _ => panic!("Unsupported contract part: {:#?}", self),
         }
     }
