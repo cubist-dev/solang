@@ -5,7 +5,6 @@ use crate::pt::CodeLocation;
 use diagnostics::Diagnostic;
 use lalrpop_util::ParseError;
 
-pub mod codegen;
 pub mod diagnostics;
 pub mod doccomment;
 mod lexer;

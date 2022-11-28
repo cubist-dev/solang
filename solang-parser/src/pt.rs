@@ -514,8 +514,8 @@ impl Docable for ContractPart {
             ContractPart::StructDefinition(sd) => sd.to_doc(),
             ContractPart::StraySemicolon(..) => text!(";"),
             ContractPart::Using(using) => using.to_doc().append(";"),
-	    ContractPart::ErrorDefinition(ed) => ed.to_doc().append(";"),
-            _ => panic!("Unsupported contract part: {:#?}", self),
+            ContractPart::ErrorDefinition(ed) => ed.to_doc().append(";"),
+            ContractPart::TypeDefinition(td) => (**td).to_doc().append(";"),
         }
     }
 }
@@ -804,6 +804,15 @@ pub struct TypeDefinition {
     pub loc: Loc,
     pub name: Identifier,
     pub ty: Expression,
+}
+
+impl Docable for TypeDefinition {
+    fn to_doc(&self) -> RcDoc<()> {
+        text!("type ")
+            .append(self.name.to_doc())
+            .append(" is ")
+            .append(self.ty.to_doc())
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]

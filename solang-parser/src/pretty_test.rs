@@ -21,6 +21,8 @@ fn pretty_test(src: &str) {
 fn r#struct() {
     let src = r#"
 contract Used {
+
+    type DistanceInMeters is uint256;
     struct Book {
         string name;
         string author;
